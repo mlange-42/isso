@@ -62,6 +62,12 @@ type Solution[F any] struct {
 	Fitness F
 }
 
+// solution for internal use.
+type solution[F any] struct {
+	Actions []action
+	Fitness F
+}
+
 // Problem definition.
 type Problem struct {
 	subjectIDs   map[string]subject
@@ -153,7 +159,7 @@ func NewProblem(
 
 // Comparator interface or comparing fitness values.
 type Comparator[F any] interface {
-	Less(a, b F) bool
+	Compare(a, b F) int
 }
 
 // Evaluator interface or deriving fitness from a solution.
@@ -163,14 +169,12 @@ type Evaluator[F any] interface {
 
 // Solver for optimization.
 type Solver[F any] struct {
-	problem       *Problem
-	bestSolution  Actions
-	bestFitness   F
-	preserved     []action
-	preservedTemp []action
-	anySolution   bool
-	evaluator     Evaluator[F]
-	comparator    Comparator[F]
+	problem      *Problem
+	bestFitness  F
+	solutions    []solution[F]
+	tempSolution []action
+	evaluator    Evaluator[F]
+	comparator   Comparator[F]
 }
 
 // NewSolver creates a new solver for a given fitness function.
@@ -182,45 +186,48 @@ func NewSolver[F any](evaluator Evaluator[F], comparator Comparator[F]) Solver[F
 }
 
 // Solve the given problem.
-func (s *Solver[F]) Solve(problem *Problem) (Solution[F], bool) {
+func (s *Solver[F]) Solve(problem *Problem) ([]Solution[F], bool) {
 	s.problem = problem
-	s.bestSolution = Actions{}
-	s.preserved = []action{}
-	s.preservedTemp = []action{}
-	s.anySolution = false
+	s.solutions = []solution[F]{}
+	s.tempSolution = []action{}
 
 	s.solve(&Actions{})
 
-	if s.anySolution {
-		actions := make([]Action, len(s.preserved))
+	if len(s.solutions) > 0 {
+		solutions := []Solution[F]{}
 
-		for i := range s.preserved {
-			a := &s.preserved[i]
-			var reuse string
-			if a.IsReuse {
-				reuse = s.problem.subjectNames[a.Reuse]
+		for _, sol := range s.solutions {
+			actions := make([]Action, len(sol.Actions))
+
+			for i := range sol.Actions {
+				a := &sol.Actions[i]
+				var reuse string
+				if a.IsReuse {
+					reuse = s.problem.subjectNames[a.Reuse]
+				}
+				actions[i] = Action{
+					Subject:       s.problem.subjectNames[a.Subject],
+					Matrix:        s.problem.matrixNames[a.Matrix],
+					Samples:       a.Samples,
+					TargetSamples: a.TargetSamples,
+					Time:          a.Time,
+					Reuse:         reuse,
+				}
 			}
-			actions[i] = Action{
-				Subject:       s.problem.subjectNames[a.Subject],
-				Matrix:        s.problem.matrixNames[a.Matrix],
-				Samples:       a.Samples,
-				TargetSamples: a.TargetSamples,
-				Time:          a.Time,
-				Reuse:         reuse,
-			}
+
+			solutions = append(solutions, Solution[F]{
+				Actions: actions,
+				Fitness: sol.Fitness,
+			})
 		}
-
-		return Solution[F]{
-			Actions: actions,
-			Fitness: s.bestFitness,
-		}, true
+		return solutions, true
 	}
-	return Solution[F]{}, false
+	return []Solution[F]{}, false
 }
 
 func (s *Solver[F]) solve(sol *Actions) {
 	fitness := s.evaluator.Evaluate(sol)
-	if !s.comparator.Less(fitness, s.bestFitness) {
+	if s.comparator.Compare(fitness, s.bestFitness) > 0 {
 		return
 	}
 
@@ -253,7 +260,7 @@ func (s *Solver[F]) solve(sol *Actions) {
 			samples -= equivalentSamples
 
 			if equivalentSamples > 0 {
-				s.preservedTemp = append(s.preservedTemp, action{
+				s.tempSolution = append(s.tempSolution, action{
 					Subject:       req.Subject,
 					Matrix:        req.Matrix,
 					Samples:       equivalentSamples,
@@ -306,20 +313,23 @@ func (s *Solver[F]) solve(sol *Actions) {
 				IsReuse:       false,
 			})
 
-			s.preservedTemp = s.preservedTemp[:0]
+			s.tempSolution = s.tempSolution[:0]
 			s.solve(sol)
 
 			sol.Actions = sol.Actions[:len(sol.Actions)-1]
 		}
 	} else {
-		if s.comparator.Less(fitness, s.bestFitness) {
+		comp := s.comparator.Compare(fitness, s.bestFitness)
+		if comp < 0 {
+			s.solutions = s.solutions[:0]
+		}
+		if comp <= 0 {
 			s.bestFitness = fitness
-			s.bestSolution = Actions{
-				Actions: slices.Clone(sol.Actions),
-			}
-			s.preserved = slices.Clone(s.preservedTemp)
-			s.preservedTemp = s.preservedTemp[:0]
-			s.anySolution = true
+			s.solutions = append(s.solutions, solution[F]{
+				Actions: slices.Clone(s.tempSolution),
+				Fitness: fitness,
+			})
+			s.tempSolution = s.tempSolution[:0]
 		}
 	}
 }

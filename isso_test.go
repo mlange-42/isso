@@ -89,7 +89,12 @@ func TestProblem(t *testing.T) {
 	)
 
 	if solution, ok := s.Solve(&p); ok {
-		fmt.Println(isso.SolutionTable(solution))
+		fmt.Printf("Found %d solution(s)\n\n", len(solution))
+		for _, sol := range solution {
+			fmt.Println(isso.SolutionTable(sol))
+			fmt.Printf("(%d trips, %d samples)\n", sol.Fitness.Trips, sol.Fitness.Samples)
+			fmt.Println()
+		}
 		return
 	}
 	fmt.Println("No solution found")
