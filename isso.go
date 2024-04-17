@@ -243,11 +243,11 @@ func (s *Solver[S, M, F]) solve(sol *Actions) {
 				continue
 			}
 
-			equivalentSamples := MinInt(act.Samples, samples)
+			equivalentSamples := min(act.Samples, samples)
 
 			ownSample := req.Subject == act.Subject
 			if ownSample {
-				equivalentSamples = MinInt(equivalentSamples, capacity[act.Time])
+				equivalentSamples = min(equivalentSamples, capacity[act.Time])
 			}
 
 			samples -= equivalentSamples
@@ -295,7 +295,7 @@ func (s *Solver[S, M, F]) solve(sol *Actions) {
 				continue
 			}
 
-			maxSamples := MinInt(requiredSamples, capacity[t])
+			maxSamples := min(requiredSamples, capacity[t])
 
 			sol.Actions = append(sol.Actions, action{
 				Subject:       unsatisfied.Subject,
