@@ -174,7 +174,7 @@ type Solver[F any] struct {
 }
 
 // NewSolver creates a new solver for a given fitness function.
-func NewSolver[S comparable, M comparable, F any](evaluator Evaluator[F], comparator Comparator[F]) Solver[F] {
+func NewSolver[F any](evaluator Evaluator[F], comparator Comparator[F]) Solver[F] {
 	return Solver[F]{
 		evaluator:  evaluator,
 		comparator: comparator,

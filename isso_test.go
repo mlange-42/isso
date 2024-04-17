@@ -83,7 +83,7 @@ func TestProblem(t *testing.T) {
 		requirements,
 	)
 
-	s := isso.NewSolver[string, string, fitness.TripsAndSamplesFitness](
+	s := isso.NewSolver(
 		&fitness.TripsAndSamplesEvaluator{},
 		&fitness.TripsAndSamplesComparator{},
 	)
