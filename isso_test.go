@@ -18,7 +18,7 @@ func TestProblem(t *testing.T) {
 		"Pest 6",
 	}
 
-	matrices := []isso.MatrixDef[string]{
+	matrices := []isso.Matrix[string]{
 		{Name: "fruits & shoots", CanReuse: []string{}},
 		{Name: "fruits | shoots", CanReuse: []string{
 			"fruits",
@@ -37,7 +37,7 @@ func TestProblem(t *testing.T) {
 		150, 250, 400, 700, 600, 200, 50, 0, 150, 200, 150, 50,
 	}
 
-	requirements := []isso.RequirementDef[string, string]{
+	requirements := []isso.Requirement[string, string]{
 		{
 			Subject: "Pest 1",
 			Matrix:  "shoots",
@@ -89,7 +89,7 @@ func TestProblem(t *testing.T) {
 	)
 
 	if solution, ok := s.Solve(&p); ok {
-		fmt.Println(isso.SolutionTable(solution))
+		fmt.Println(isso.SolutionTable(solution.Actions))
 		return
 	}
 	fmt.Println("No solution found")

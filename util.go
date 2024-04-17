@@ -5,14 +5,14 @@ import (
 	"strings"
 )
 
-func MinInt(a, b int) int {
+func min(a, b int) int {
 	if a < b {
 		return a
 	}
 	return b
 }
 
-func SolutionTable[S comparable, M comparable](solution []ActionDef[S, M]) string {
+func SolutionTable[S comparable, M comparable](solution []Action[S, M]) string {
 	b := strings.Builder{}
 
 	b.WriteString(
