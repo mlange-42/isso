@@ -23,21 +23,21 @@ type Action struct {
 	TargetSamples int
 }
 
-type MatrixDef struct {
-	Name     string
-	CanReuse []string
+type MatrixDef[M comparable] struct {
+	Name     M
+	CanReuse []M
 }
 
-type Problem struct {
-	matrixIDs   map[string]Matrix
-	matrixNames map[Matrix]string
+type Problem[M comparable] struct {
+	matrixIDs   map[M]Matrix
+	matrixNames map[Matrix]M
 	capacity    []int
 	reusable    [][]bool
 }
 
-func NewProblem(matrices []MatrixDef, capacity []int) Problem {
-	ids := map[string]Matrix{}
-	names := map[Matrix]string{}
+func NewProblem[M comparable](matrices []MatrixDef[M], capacity []int) Problem[M] {
+	ids := map[M]Matrix{}
+	names := map[Matrix]M{}
 	for i, m := range matrices {
 		ids[m.Name] = Matrix(i)
 		names[Matrix(i)] = m.Name
@@ -51,12 +51,12 @@ func NewProblem(matrices []MatrixDef, capacity []int) Problem {
 			if id, ok := ids[ru]; ok {
 				reusable[i][id] = true
 			} else {
-				log.Fatalf("unknown matrix '%s'", ru)
+				log.Fatalf("unknown matrix '%v'", ru)
 			}
 		}
 	}
 
-	return Problem{
+	return Problem[M]{
 		matrixIDs:   ids,
 		matrixNames: names,
 		capacity:    capacity,

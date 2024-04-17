@@ -7,7 +7,7 @@ import (
 )
 
 func TestProblem(t *testing.T) {
-	matrices := []isso.MatrixDef{
+	matrices := []isso.MatrixDef[string]{
 		{Name: "fruits & shoots", CanReuse: []string{}},
 		{Name: "fruits | shoots", CanReuse: []string{
 			"fruits",
