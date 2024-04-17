@@ -26,6 +26,7 @@ type Action struct {
 	Subject       Subject
 	Matrix        Matrix
 	Reuse         Subject
+	IsReuse       bool
 	Time          int
 	Samples       int
 	TargetSamples int
@@ -34,6 +35,10 @@ type Action struct {
 type MatrixDef[M comparable] struct {
 	Name     M
 	CanReuse []M
+}
+
+type Solution struct {
+	Actions []Action
 }
 
 type Problem[S comparable, M comparable] struct {
@@ -121,4 +126,42 @@ func NewProblem[S comparable, M comparable](
 		reusable:     reusable,
 		requirements: req,
 	}
+}
+
+type Comparator[F any] interface {
+	Less(a, b F) bool
+}
+type Evaluator[F any] interface {
+	Evaluate(s *Solution) F
+}
+
+type Solver[S comparable, M comparable, F any] struct {
+	problem       *Problem[S, M]
+	bestSolution  []Action
+	preserved     []Action
+	preservedTemp []Action
+	anySolution   bool
+	evaluator     Evaluator[F]
+	comparator    Comparator[F]
+}
+
+func NewSolver[S comparable, M comparable, F any](evaluator Evaluator[F], comparator Comparator[F]) Solver[S, M, F] {
+	return Solver[S, M, F]{
+		evaluator:  evaluator,
+		comparator: comparator,
+	}
+}
+
+func (s *Solver[S, M, F]) Solve(problem *Problem[S, M]) {
+	s.problem = problem
+	s.bestSolution = []Action{}
+	s.preserved = []Action{}
+	s.preservedTemp = []Action{}
+	s.anySolution = false
+
+	s.solve(&Solution{})
+}
+
+func (s *Solver[S, M, F]) solve(solution *Solution) {
+
 }

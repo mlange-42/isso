@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/mlange-42/isso"
+	"github.com/mlange-42/isso/fitness"
 )
 
 func TestProblem(t *testing.T) {
@@ -81,5 +82,10 @@ func TestProblem(t *testing.T) {
 		requirements,
 	)
 
-	_ = p
+	s := isso.NewSolver[string, string, fitness.TripsAndSamplesFitness](
+		&fitness.TripsAndSamplesEvaluator{},
+		&fitness.TripsAndSamplesComparator{},
+	)
+
+	s.Solve(&p)
 }
