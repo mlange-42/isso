@@ -5,17 +5,19 @@ import (
 	"slices"
 )
 
-type Subject int
-type Matrix int
+type subject int
+type matrix int
 
-type RequirementDef[S comparable, M comparable] struct {
+// Requirement definition.
+type Requirement[S comparable, M comparable] struct {
 	Subject S
 	Matrix  M
 	Samples int
 	Times   []int
 }
 
-type ActionDef[S comparable, M comparable] struct {
+// Action definition.
+type Action[S comparable, M comparable] struct {
 	Subject       S
 	Matrix        M
 	Reuse         S
@@ -24,60 +26,72 @@ type ActionDef[S comparable, M comparable] struct {
 	TargetSamples int
 }
 
-type Requirement struct {
-	Subject Subject
-	Matrix  Matrix
+// requirement for internal use, using no strings.
+type requirement struct {
+	Subject subject
+	Matrix  matrix
 	Samples int
 	Times   []int
 }
 
-type Action struct {
-	Subject       Subject
-	Matrix        Matrix
-	Reuse         Subject
+// action for internal use, using no strings.
+type action struct {
+	Subject       subject
+	Matrix        matrix
+	Reuse         subject
 	IsReuse       bool
 	Time          int
 	Samples       int
 	TargetSamples int
 }
 
-type MatrixDef[M comparable] struct {
+// Matrix definition.
+type Matrix[M comparable] struct {
 	Name     M
 	CanReuse []M
 }
 
-type Solution struct {
-	Actions []Action
+// Actions of an internal solution.
+type Actions struct {
+	Actions []action
 }
 
+// Solution, translated back to using strings for subject and matrix.
+type Solution[S comparable, M comparable, F any] struct {
+	Actions []Action[S, M]
+	Fitness F
+}
+
+// Problem definition.
 type Problem[S comparable, M comparable] struct {
-	subjectIDs   map[S]Subject
-	subjectNames map[Subject]S
-	matrixIDs    map[M]Matrix
-	matrixNames  map[Matrix]M
+	subjectIDs   map[S]subject
+	subjectNames map[subject]S
+	matrixIDs    map[M]matrix
+	matrixNames  map[matrix]M
 	capacity     []int
 	reusable     [][]bool
-	requirements []Requirement
+	requirements []requirement
 }
 
+// NewProblem creates a new problem definition.
 func NewProblem[S comparable, M comparable](
 	subjects []S,
-	matrices []MatrixDef[M],
+	matrices []Matrix[M],
 	capacity []int,
-	requirements []RequirementDef[S, M]) Problem[S, M] {
+	requirements []Requirement[S, M]) Problem[S, M] {
 
-	matrixIDs := map[M]Matrix{}
-	matrixNames := map[Matrix]M{}
+	matrixIDs := map[M]matrix{}
+	matrixNames := map[matrix]M{}
 	for i, m := range matrices {
-		matrixIDs[m.Name] = Matrix(i)
-		matrixNames[Matrix(i)] = m.Name
+		matrixIDs[m.Name] = matrix(i)
+		matrixNames[matrix(i)] = m.Name
 	}
 
-	subjectIDs := map[S]Subject{}
-	subjectNames := map[Subject]S{}
+	subjectIDs := map[S]subject{}
+	subjectNames := map[subject]S{}
 	for i, s := range subjects {
-		subjectIDs[s] = Subject(i)
-		subjectNames[Subject(i)] = s
+		subjectIDs[s] = subject(i)
+		subjectNames[subject(i)] = s
 	}
 
 	reusable := make([][]bool, len(matrices))
@@ -93,8 +107,8 @@ func NewProblem[S comparable, M comparable](
 		}
 	}
 
-	req := make([]Requirement, len(requirements))
-	uniqueReq := map[Subject]bool{}
+	req := make([]requirement, len(requirements))
+	uniqueReq := map[subject]bool{}
 	for i, r := range requirements {
 		subject, ok := subjectIDs[r.Subject]
 		if !ok {
@@ -118,7 +132,7 @@ func NewProblem[S comparable, M comparable](
 			log.Fatalf("duplicate time entry in times for subject '%v'", r.Subject)
 		}
 
-		req[i] = Requirement{
+		req[i] = requirement{
 			Subject: subject,
 			Matrix:  matrix,
 			Samples: r.Samples,
@@ -137,24 +151,29 @@ func NewProblem[S comparable, M comparable](
 	}
 }
 
+// Comparator interface or comparing fitness values.
 type Comparator[F any] interface {
 	Less(a, b F) bool
 }
+
+// Evaluator interface or deriving fitness from a solution.
 type Evaluator[F any] interface {
-	Evaluate(s *Solution) F
+	Evaluate(s *Actions) F
 }
 
+// Solver for optimization.
 type Solver[S comparable, M comparable, F any] struct {
 	problem       *Problem[S, M]
-	bestSolution  Solution
+	bestSolution  Actions
 	bestFitness   F
-	preserved     []Action
-	preservedTemp []Action
+	preserved     []action
+	preservedTemp []action
 	anySolution   bool
 	evaluator     Evaluator[F]
 	comparator    Comparator[F]
 }
 
+// NewSolver creates a new solver for a given fitness function.
 func NewSolver[S comparable, M comparable, F any](evaluator Evaluator[F], comparator Comparator[F]) Solver[S, M, F] {
 	return Solver[S, M, F]{
 		evaluator:  evaluator,
@@ -162,17 +181,18 @@ func NewSolver[S comparable, M comparable, F any](evaluator Evaluator[F], compar
 	}
 }
 
-func (s *Solver[S, M, F]) Solve(problem *Problem[S, M]) ([]ActionDef[S, M], bool) {
+// Solve the given problem.
+func (s *Solver[S, M, F]) Solve(problem *Problem[S, M]) (Solution[S, M, F], bool) {
 	s.problem = problem
-	s.bestSolution = Solution{}
-	s.preserved = []Action{}
-	s.preservedTemp = []Action{}
+	s.bestSolution = Actions{}
+	s.preserved = []action{}
+	s.preservedTemp = []action{}
 	s.anySolution = false
 
-	s.solve(&Solution{})
+	s.solve(&Actions{})
 
 	if s.anySolution {
-		actions := make([]ActionDef[S, M], len(s.preserved))
+		actions := make([]Action[S, M], len(s.preserved))
 
 		for i := range s.preserved {
 			a := &s.preserved[i]
@@ -180,7 +200,7 @@ func (s *Solver[S, M, F]) Solve(problem *Problem[S, M]) ([]ActionDef[S, M], bool
 			if a.IsReuse {
 				reuse = s.problem.subjectNames[a.Reuse]
 			}
-			actions[i] = ActionDef[S, M]{
+			actions[i] = Action[S, M]{
 				Subject:       s.problem.subjectNames[a.Subject],
 				Matrix:        s.problem.matrixNames[a.Matrix],
 				Samples:       a.Samples,
@@ -190,57 +210,60 @@ func (s *Solver[S, M, F]) Solve(problem *Problem[S, M]) ([]ActionDef[S, M], bool
 			}
 		}
 
-		return actions, true
+		return Solution[S, M, F]{
+			Actions: actions,
+			Fitness: s.bestFitness,
+		}, true
 	}
-	return nil, false
+	return Solution[S, M, F]{}, false
 }
 
-func (s *Solver[S, M, F]) solve(solution *Solution) {
-	fitness := s.evaluator.Evaluate(solution)
+func (s *Solver[S, M, F]) solve(sol *Actions) {
+	fitness := s.evaluator.Evaluate(sol)
 	if !s.comparator.Less(fitness, s.bestFitness) {
 		return
 	}
 
-	var unsatisfied *Requirement = nil
+	var unsatisfied *requirement = nil
 	var requiredSamples = 0
 
 	capacity := slices.Clone(s.problem.capacity)
 
 	for r := range s.problem.requirements {
-		requirement := &s.problem.requirements[r]
-		samples := requirement.Samples
-		for a := range solution.Actions {
-			action := &solution.Actions[a]
+		req := &s.problem.requirements[r]
+		samples := req.Samples
+		for a := range sol.Actions {
+			act := &sol.Actions[a]
 
-			if !slices.Contains(requirement.Times, action.Time) {
+			if !slices.Contains(req.Times, act.Time) {
 				continue
 			}
 
-			if !s.problem.reusable[requirement.Matrix][action.Matrix] {
+			if !s.problem.reusable[req.Matrix][act.Matrix] {
 				continue
 			}
 
-			equivalentSamples := MinInt(action.Samples, samples)
+			equivalentSamples := MinInt(act.Samples, samples)
 
-			ownSample := requirement.Subject == action.Subject
+			ownSample := req.Subject == act.Subject
 			if ownSample {
-				equivalentSamples = MinInt(equivalentSamples, capacity[action.Time])
+				equivalentSamples = MinInt(equivalentSamples, capacity[act.Time])
 			}
 
 			samples -= equivalentSamples
 
 			if equivalentSamples > 0 {
-				s.preservedTemp = append(s.preservedTemp, Action{
-					Subject:       requirement.Subject,
-					Matrix:        requirement.Matrix,
+				s.preservedTemp = append(s.preservedTemp, action{
+					Subject:       req.Subject,
+					Matrix:        req.Matrix,
 					Samples:       equivalentSamples,
-					Time:          action.Time,
-					TargetSamples: requirement.Samples,
+					Time:          act.Time,
+					TargetSamples: req.Samples,
 					IsReuse:       !ownSample,
-					Reuse:         action.Subject,
+					Reuse:         act.Subject,
 				})
 				if ownSample {
-					capacity[action.Time] -= equivalentSamples
+					capacity[act.Time] -= equivalentSamples
 				}
 			}
 			if samples == 0 {
@@ -250,16 +273,16 @@ func (s *Solver[S, M, F]) solve(solution *Solution) {
 
 		if samples > 0 {
 			if unsatisfied == nil {
-				unsatisfied = requirement
+				unsatisfied = req
 				requiredSamples = samples
 			} else {
-				if requirement.Matrix == unsatisfied.Matrix {
+				if req.Matrix == unsatisfied.Matrix {
 					if samples > requiredSamples {
-						unsatisfied = requirement
+						unsatisfied = req
 						requiredSamples = samples
 					}
-				} else if s.problem.reusable[unsatisfied.Matrix][requirement.Matrix] {
-					unsatisfied = requirement
+				} else if s.problem.reusable[unsatisfied.Matrix][req.Matrix] {
+					unsatisfied = req
 					requiredSamples = samples
 				}
 			}
@@ -274,7 +297,7 @@ func (s *Solver[S, M, F]) solve(solution *Solution) {
 
 			maxSamples := MinInt(requiredSamples, capacity[t])
 
-			solution.Actions = append(solution.Actions, Action{
+			sol.Actions = append(sol.Actions, action{
 				Subject:       unsatisfied.Subject,
 				Matrix:        unsatisfied.Matrix,
 				Samples:       maxSamples,
@@ -284,15 +307,15 @@ func (s *Solver[S, M, F]) solve(solution *Solution) {
 			})
 
 			s.preservedTemp = s.preservedTemp[:0]
-			s.solve(solution)
+			s.solve(sol)
 
-			solution.Actions = solution.Actions[:len(solution.Actions)-1]
+			sol.Actions = sol.Actions[:len(sol.Actions)-1]
 		}
 	} else {
 		if s.comparator.Less(fitness, s.bestFitness) {
 			s.bestFitness = fitness
-			s.bestSolution = Solution{
-				Actions: slices.Clone(solution.Actions),
+			s.bestSolution = Actions{
+				Actions: slices.Clone(sol.Actions),
 			}
 			s.preserved = slices.Clone(s.preservedTemp)
 			s.preservedTemp = s.preservedTemp[:0]

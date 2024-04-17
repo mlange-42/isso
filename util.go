@@ -12,7 +12,7 @@ func MinInt(a, b int) int {
 	return b
 }
 
-func SolutionTable[S comparable, M comparable](solution []ActionDef[S, M]) string {
+func SolutionTable[S comparable, M comparable](solution []Action[S, M]) string {
 	b := strings.Builder{}
 
 	b.WriteString(
