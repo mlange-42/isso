@@ -195,37 +195,45 @@ func (s *Solver[F]) Solve(problem *Problem) ([]Solution[F], bool) {
 	s.solve(&Actions{})
 
 	if len(s.solutions) > 0 {
-		solutions := []Solution[F]{}
-
-		for _, sol := range s.solutions {
-			actions := make([]Action, len(sol.Actions))
-
-			for i := range sol.Actions {
-				a := &sol.Actions[i]
-				var reuse string
-				if a.IsReuse {
-					reuse = s.problem.subjectNames[a.Reuse]
-				}
-				actions[i] = Action{
-					Subject:       s.problem.subjectNames[a.Subject],
-					Matrix:        s.problem.matrixNames[a.Matrix],
-					Samples:       a.Samples,
-					TargetSamples: a.TargetSamples,
-					Time:          a.Time,
-					Reuse:         reuse,
-				}
-			}
-
-			solutions = append(solutions, Solution[F]{
-				Actions: actions,
-				Fitness: sol.Fitness,
-			})
-		}
-		return solutions, true
+		return s.toSolutions(), true
 	}
 	return []Solution[F]{}, false
 }
 
+// toSolutions converts the solution results to the solution output type,
+// translating integer IDs back to strings.
+func (s *Solver[F]) toSolutions() []Solution[F] {
+	solutions := []Solution[F]{}
+
+	for _, sol := range s.solutions {
+		actions := make([]Action, len(sol.Actions))
+
+		for i := range sol.Actions {
+			a := &sol.Actions[i]
+			var reuse string
+			if a.IsReuse {
+				reuse = s.problem.subjectNames[a.Reuse]
+			}
+			actions[i] = Action{
+				Subject:       s.problem.subjectNames[a.Subject],
+				Matrix:        s.problem.matrixNames[a.Matrix],
+				Samples:       a.Samples,
+				TargetSamples: a.TargetSamples,
+				Time:          a.Time,
+				Reuse:         reuse,
+			}
+		}
+
+		solutions = append(solutions, Solution[F]{
+			Actions: actions,
+			Fitness: sol.Fitness,
+		})
+	}
+
+	return solutions
+}
+
+// Recursive solver function.
 func (s *Solver[F]) solve(sol *Actions) {
 	fitness := s.evaluator.Evaluate(sol)
 
@@ -253,13 +261,11 @@ func (s *Solver[F]) solve(sol *Actions) {
 			if !slices.Contains(req.Times, act.Time) {
 				continue
 			}
-
 			if !s.problem.reusable[req.Matrix][act.Matrix] {
 				continue
 			}
 
 			equivalentSamples := min(act.Samples, samples)
-
 			ownSample := req.Subject == act.Subject
 			if ownSample {
 				equivalentSamples = min(equivalentSamples, capacity[act.Time])
@@ -291,11 +297,13 @@ func (s *Solver[F]) solve(sol *Actions) {
 				unsatisfied = req
 				requiredSamples = samples
 			} else {
+				// for the same matrix, prefer the larger sample.
 				if req.Matrix == unsatisfied.Matrix {
 					if samples > requiredSamples {
 						unsatisfied = req
 						requiredSamples = samples
 					}
+					// if not the same matrix, prefer the one that can be re-used by the other.
 				} else if s.problem.reusable[unsatisfied.Matrix][req.Matrix] {
 					unsatisfied = req
 					requiredSamples = samples
@@ -310,18 +318,16 @@ func (s *Solver[F]) solve(sol *Actions) {
 				continue
 			}
 
-			maxSamples := min(requiredSamples, capacity[t])
-
 			sol.Actions = append(sol.Actions, action{
 				Subject:       unsatisfied.Subject,
 				Matrix:        unsatisfied.Matrix,
-				Samples:       maxSamples,
+				Samples:       min(requiredSamples, capacity[t]),
 				TargetSamples: unsatisfied.Samples,
 				Time:          t,
 				IsReuse:       false,
 			})
-
 			s.tempSolution = s.tempSolution[:0]
+
 			s.solve(sol)
 
 			sol.Actions = sol.Actions[:len(sol.Actions)-1]
@@ -352,12 +358,15 @@ func (s *Solver[F]) solve(sol *Actions) {
 	}
 }
 
+// removeSolution swap-removes the solution at the given index.
 func (s *Solver[F]) removeSolution(idx int) {
 	ln := len(s.solutions) - 1
 	s.solutions[idx], s.solutions[ln] = s.solutions[ln], s.solutions[idx]
 	s.solutions = s.solutions[:ln]
 }
 
+// isParetoOptimal checks if the given fitness is pareto-optimal and should be retained as a solution.
+// If argument remove is true, all non-optimal solutions are removed from the Solver.
 func (s *Solver[F]) isParetoOptimal(f F, remove bool) bool {
 	betterThanAny := len(s.solutions) == 0
 	hasDuplicate := false
