@@ -68,6 +68,13 @@ type solution[F any] struct {
 	Fitness F
 }
 
+type ProblemDef struct {
+	Subjects     []string
+	Matrices     []Matrix
+	Capacity     []int
+	Requirements []Requirement
+}
+
 // Problem definition.
 type Problem struct {
 	subjectIDs   map[string]subject
@@ -80,29 +87,25 @@ type Problem struct {
 }
 
 // NewProblem creates a new problem definition.
-func NewProblem(
-	subjects []string,
-	matrices []Matrix,
-	capacity []int,
-	requirements []Requirement) Problem {
+func NewProblem(problem ProblemDef) Problem {
 
 	matrixIDs := map[string]matrix{}
 	matrixNames := map[matrix]string{}
-	for i, m := range matrices {
+	for i, m := range problem.Matrices {
 		matrixIDs[m.Name] = matrix(i)
 		matrixNames[matrix(i)] = m.Name
 	}
 
 	subjectIDs := map[string]subject{}
 	subjectNames := map[subject]string{}
-	for i, s := range subjects {
+	for i, s := range problem.Subjects {
 		subjectIDs[s] = subject(i)
 		subjectNames[subject(i)] = s
 	}
 
-	reusable := make([][]bool, len(matrices))
-	for i, m := range matrices {
-		reusable[i] = make([]bool, len(matrices))
+	reusable := make([][]bool, len(problem.Matrices))
+	for i, m := range problem.Matrices {
+		reusable[i] = make([]bool, len(problem.Matrices))
 		reusable[i][i] = true
 		for _, ru := range m.CanReuse {
 			if id, ok := matrixIDs[ru]; ok {
@@ -113,9 +116,9 @@ func NewProblem(
 		}
 	}
 
-	req := make([]requirement, len(requirements))
+	req := make([]requirement, len(problem.Requirements))
 	uniqueReq := map[subject]bool{}
-	for i, r := range requirements {
+	for i, r := range problem.Requirements {
 		subject, ok := subjectIDs[r.Subject]
 		if !ok {
 			log.Fatalf("unknown subject '%v'", r.Subject)
@@ -151,7 +154,7 @@ func NewProblem(
 		subjectNames: subjectNames,
 		matrixIDs:    matrixIDs,
 		matrixNames:  matrixNames,
-		capacity:     capacity,
+		capacity:     problem.Capacity,
 		reusable:     reusable,
 		requirements: req,
 	}

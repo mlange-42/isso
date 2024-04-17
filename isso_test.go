@@ -77,10 +77,12 @@ func TestDefaultProblem(t *testing.T) {
 	}
 
 	p := isso.NewProblem(
-		subjects,
-		matrices,
-		capacity,
-		requirements,
+		isso.ProblemDef{
+			Subjects:     subjects,
+			Matrices:     matrices,
+			Capacity:     capacity,
+			Requirements: requirements,
+		},
 	)
 
 	s := isso.NewSolver(
@@ -135,10 +137,12 @@ func TestParetoProblem(t *testing.T) {
 	}
 
 	p := isso.NewProblem(
-		subjects,
-		matrices,
-		capacity,
-		requirements,
+		isso.ProblemDef{
+			Subjects:     subjects,
+			Matrices:     matrices,
+			Capacity:     capacity,
+			Requirements: requirements,
+		},
 	)
 
 	s := isso.NewSolver(
