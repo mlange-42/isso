@@ -89,7 +89,7 @@ func TestProblem(t *testing.T) {
 	)
 
 	if solution, ok := s.Solve(&p); ok {
-		fmt.Println(isso.SolutionTable(solution.Actions))
+		fmt.Println(isso.SolutionTable(solution))
 		return
 	}
 	fmt.Println("No solution found")
