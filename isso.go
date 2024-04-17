@@ -79,11 +79,18 @@ func NewProblem[S comparable, M comparable](
 	}
 
 	req := make([]Requirement, len(requirements))
+	uniqueReq := map[Subject]bool{}
 	for i, r := range requirements {
 		subject, ok := subjectIDs[r.Subject]
 		if !ok {
 			log.Fatalf("unknown subject '%v'", r.Subject)
 		}
+
+		if _, ok := uniqueReq[subject]; ok {
+			log.Fatalf("duplicate subject '%v' in requirements", r.Subject)
+		}
+		uniqueReq[subject] = true
+
 		matrix, ok := matrixIDs[r.Matrix]
 		if !ok {
 			log.Fatalf("unknown matrix '%v'", r.Matrix)
