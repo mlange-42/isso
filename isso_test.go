@@ -92,7 +92,12 @@ func TestProblem(t *testing.T) {
 		fmt.Printf("Found %d solution(s)\n\n", len(solution))
 		for _, sol := range solution {
 			fmt.Println(isso.SolutionTable(sol))
+			fmt.Println()
+			fmt.Println(isso.SolutionList(sol))
+			fmt.Println()
 			fmt.Printf("(%d trips, %d samples)\n", sol.Fitness.Trips, sol.Fitness.Samples)
+			fmt.Println()
+			fmt.Println("------------------------------------------------------------")
 			fmt.Println()
 		}
 		return
