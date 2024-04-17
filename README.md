@@ -7,6 +7,26 @@
 [![GitHub](https://img.shields.io/badge/github-repo-blue?logo=github)](https://github.com/mlange-42/isso)
 [![MIT license](https://img.shields.io/badge/MIT-brightgreen?label=license)](https://github.com/mlange-42/isso/blob/main/LICENSE)
 
+isso is a Go library and CLI app for optimizing sampling schedules under constrained capacity any potential sample re-use.
+
+## CLI usage
+
+Run the included examples like this...
+
+The default test problem:
+
+```
+go run ./main -i data/problem.json
+```
+
+A pareto optimization example:
+
+```
+go run ./main -i data/pareto.json --pareto --format fitness
+```
+
+See folder `data` for problem definition examples.
+
 ## License
 
 This project is distributed under the [MIT license](./LICENSE).
