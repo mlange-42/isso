@@ -8,7 +8,7 @@ import (
 	"github.com/mlange-42/isso/fitness"
 )
 
-func TestProblem(t *testing.T) {
+func TestDefaultProblem(t *testing.T) {
 	subjects := []string{
 		"Pest 1",
 		"Pest 2",
@@ -85,7 +85,7 @@ func TestProblem(t *testing.T) {
 
 	s := isso.NewSolver(
 		&fitness.TripsAndSamplesEvaluator{},
-		&fitness.TripsAndSamplesComparator{},
+		&fitness.TripsThenSamples{},
 	)
 
 	if solution, ok := s.Solve(&p); ok {
@@ -99,6 +99,57 @@ func TestProblem(t *testing.T) {
 			fmt.Println()
 			fmt.Println("------------------------------------------------------------")
 			fmt.Println()
+		}
+		return
+	}
+	fmt.Println("No solution found")
+}
+
+func TestParetoProblem(t *testing.T) {
+	subjects := []string{
+		"Pest 1",
+		"Pest 2",
+	}
+
+	matrices := []isso.Matrix{
+		{Name: "fruits", CanReuse: []string{}},
+	}
+
+	capacity := []int{
+		1000, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 1000,
+	}
+
+	requirements := []isso.Requirement{
+		{
+			Subject: "Pest 1",
+			Matrix:  "fruits",
+			Samples: 1000,
+			Times:   []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+		},
+		{
+			Subject: "Pest 2",
+			Matrix:  "fruits",
+			Samples: 1000,
+			Times:   []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11},
+		},
+	}
+
+	p := isso.NewProblem(
+		subjects,
+		matrices,
+		capacity,
+		requirements,
+	)
+
+	s := isso.NewSolver(
+		&fitness.TripsAndSamplesEvaluator{},
+		&fitness.TripsSamplesPareto{},
+	)
+
+	if solution, ok := s.Solve(&p); ok {
+		fmt.Printf("Found %d solution(s)\n\n", len(solution))
+		for _, sol := range solution {
+			fmt.Printf("(%d trips, %d samples)\n", sol.Fitness.Trips, sol.Fitness.Samples)
 		}
 		return
 	}
