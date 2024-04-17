@@ -41,5 +41,8 @@ func (e *TripsAndSamplesEvaluator) Evaluate(s *isso.Solution) TripsAndSamplesFit
 type TripsAndSamplesComparator struct{}
 
 func (e *TripsAndSamplesComparator) Less(a, b TripsAndSamplesFitness) bool {
+	if b.Trips == 0 && b.Samples == 0 {
+		return true
+	}
 	return a.Trips < b.Trips || (a.Trips == b.Trips && a.Samples < b.Samples)
 }

@@ -1,6 +1,7 @@
 package isso_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/mlange-42/isso"
@@ -87,5 +88,9 @@ func TestProblem(t *testing.T) {
 		&fitness.TripsAndSamplesComparator{},
 	)
 
-	s.Solve(&p)
+	if solution, ok := s.Solve(&p); ok {
+		fmt.Println(isso.SolutionTable(solution))
+		return
+	}
+	fmt.Println("No solution found")
 }

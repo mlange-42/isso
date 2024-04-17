@@ -15,6 +15,15 @@ type RequirementDef[S comparable, M comparable] struct {
 	Times   []int
 }
 
+type ActionDef[S comparable, M comparable] struct {
+	Subject       S
+	Matrix        M
+	Reuse         S
+	Time          int
+	Samples       int
+	TargetSamples int
+}
+
 type Requirement struct {
 	Subject Subject
 	Matrix  Matrix
@@ -137,7 +146,8 @@ type Evaluator[F any] interface {
 
 type Solver[S comparable, M comparable, F any] struct {
 	problem       *Problem[S, M]
-	bestSolution  []Action
+	bestSolution  Solution
+	bestFitness   F
 	preserved     []Action
 	preservedTemp []Action
 	anySolution   bool
@@ -152,16 +162,141 @@ func NewSolver[S comparable, M comparable, F any](evaluator Evaluator[F], compar
 	}
 }
 
-func (s *Solver[S, M, F]) Solve(problem *Problem[S, M]) {
+func (s *Solver[S, M, F]) Solve(problem *Problem[S, M]) ([]ActionDef[S, M], bool) {
 	s.problem = problem
-	s.bestSolution = []Action{}
+	s.bestSolution = Solution{}
 	s.preserved = []Action{}
 	s.preservedTemp = []Action{}
 	s.anySolution = false
 
 	s.solve(&Solution{})
+
+	if s.anySolution {
+		actions := make([]ActionDef[S, M], len(s.preserved))
+
+		for i := range s.preserved {
+			a := &s.preserved[i]
+			var reuse S
+			if a.IsReuse {
+				reuse = s.problem.subjectNames[a.Reuse]
+			}
+			actions[i] = ActionDef[S, M]{
+				Subject:       s.problem.subjectNames[a.Subject],
+				Matrix:        s.problem.matrixNames[a.Matrix],
+				Samples:       a.Samples,
+				TargetSamples: a.TargetSamples,
+				Time:          a.Time,
+				Reuse:         reuse,
+			}
+		}
+
+		return actions, true
+	}
+	return nil, false
 }
 
 func (s *Solver[S, M, F]) solve(solution *Solution) {
+	fitness := s.evaluator.Evaluate(solution)
+	if !s.comparator.Less(fitness, s.bestFitness) {
+		return
+	}
 
+	var unsatisfied *Requirement = nil
+	var requiredSamples = 0
+
+	capacity := slices.Clone(s.problem.capacity)
+
+	for r := range s.problem.requirements {
+		requirement := &s.problem.requirements[r]
+		samples := requirement.Samples
+		for a := range solution.Actions {
+			action := &solution.Actions[a]
+
+			if !slices.Contains(requirement.Times, action.Time) {
+				continue
+			}
+
+			if !s.problem.reusable[requirement.Matrix][action.Matrix] {
+				continue
+			}
+
+			equivalentSamples := MinInt(action.Samples, samples)
+
+			ownSample := requirement.Subject == action.Subject
+			if ownSample {
+				equivalentSamples = MinInt(equivalentSamples, capacity[action.Time])
+			}
+
+			samples -= equivalentSamples
+
+			if equivalentSamples > 0 {
+				s.preservedTemp = append(s.preservedTemp, Action{
+					Subject:       requirement.Subject,
+					Matrix:        requirement.Matrix,
+					Samples:       equivalentSamples,
+					Time:          action.Time,
+					TargetSamples: requirement.Samples,
+					IsReuse:       !ownSample,
+					Reuse:         action.Subject,
+				})
+				if ownSample {
+					capacity[action.Time] -= equivalentSamples
+				}
+			}
+			if samples == 0 {
+				break
+			}
+		}
+
+		if samples > 0 {
+			if unsatisfied == nil {
+				unsatisfied = requirement
+				requiredSamples = samples
+			} else {
+				if requirement.Matrix == unsatisfied.Matrix {
+					if samples > requiredSamples {
+						unsatisfied = requirement
+						requiredSamples = samples
+					}
+				} else if s.problem.reusable[unsatisfied.Matrix][requirement.Matrix] {
+					unsatisfied = requirement
+					requiredSamples = samples
+				}
+			}
+		}
+	}
+
+	if unsatisfied != nil {
+		for _, t := range unsatisfied.Times {
+			if capacity[t] <= 0 {
+				continue
+			}
+
+			maxSamples := MinInt(requiredSamples, capacity[t])
+
+			solution.Actions = append(solution.Actions, Action{
+				Subject:       unsatisfied.Subject,
+				Matrix:        unsatisfied.Matrix,
+				Samples:       maxSamples,
+				TargetSamples: unsatisfied.Samples,
+				Time:          t,
+				IsReuse:       false,
+			})
+
+			s.preservedTemp = s.preservedTemp[:0]
+			s.solve(solution)
+
+			solution.Actions = solution.Actions[:len(solution.Actions)-1]
+		}
+	} else {
+		if s.comparator.Less(fitness, s.bestFitness) {
+			s.bestFitness = fitness
+			s.bestSolution = Solution{
+				Actions: slices.Clone(solution.Actions),
+			}
+			s.preserved = slices.Clone(s.preservedTemp)
+			s.preservedTemp = s.preservedTemp[:0]
+			s.anySolution = true
+		}
+	}
 }
