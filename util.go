@@ -12,7 +12,7 @@ func min(a, b int) int {
 	return b
 }
 
-func SolutionTable[S comparable, M comparable](solution []Action[S, M]) string {
+func SolutionTable(solution []Action) string {
 	b := strings.Builder{}
 
 	b.WriteString(
@@ -21,7 +21,7 @@ func SolutionTable[S comparable, M comparable](solution []Action[S, M]) string {
 
 	for _, a := range solution {
 		b.WriteString(
-			fmt.Sprintf("%10v %18v %6d %10d %10v %10d\n", a.Subject, a.Matrix, a.Time, a.Samples, a.Reuse, a.TargetSamples),
+			fmt.Sprintf("%10s %18s %6d %10d %10s %10d\n", a.Subject, a.Matrix, a.Time, a.Samples, a.Reuse, a.TargetSamples),
 		)
 	}
 	return b.String()

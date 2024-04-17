@@ -9,18 +9,18 @@ type subject int
 type matrix int
 
 // Requirement definition.
-type Requirement[S comparable, M comparable] struct {
-	Subject S
-	Matrix  M
+type Requirement struct {
+	Subject string
+	Matrix  string
 	Samples int
 	Times   []int
 }
 
 // Action definition.
-type Action[S comparable, M comparable] struct {
-	Subject       S
-	Matrix        M
-	Reuse         S
+type Action struct {
+	Subject       string
+	Matrix        string
+	Reuse         string
 	Time          int
 	Samples       int
 	TargetSamples int
@@ -46,9 +46,9 @@ type action struct {
 }
 
 // Matrix definition.
-type Matrix[M comparable] struct {
-	Name     M
-	CanReuse []M
+type Matrix struct {
+	Name     string
+	CanReuse []string
 }
 
 // Actions of an internal solution.
@@ -57,38 +57,38 @@ type Actions struct {
 }
 
 // Solution, translated back to using strings for subject and matrix.
-type Solution[S comparable, M comparable, F any] struct {
-	Actions []Action[S, M]
+type Solution[F any] struct {
+	Actions []Action
 	Fitness F
 }
 
 // Problem definition.
-type Problem[S comparable, M comparable] struct {
-	subjectIDs   map[S]subject
-	subjectNames map[subject]S
-	matrixIDs    map[M]matrix
-	matrixNames  map[matrix]M
+type Problem struct {
+	subjectIDs   map[string]subject
+	subjectNames map[subject]string
+	matrixIDs    map[string]matrix
+	matrixNames  map[matrix]string
 	capacity     []int
 	reusable     [][]bool
 	requirements []requirement
 }
 
 // NewProblem creates a new problem definition.
-func NewProblem[S comparable, M comparable](
-	subjects []S,
-	matrices []Matrix[M],
+func NewProblem(
+	subjects []string,
+	matrices []Matrix,
 	capacity []int,
-	requirements []Requirement[S, M]) Problem[S, M] {
+	requirements []Requirement) Problem {
 
-	matrixIDs := map[M]matrix{}
-	matrixNames := map[matrix]M{}
+	matrixIDs := map[string]matrix{}
+	matrixNames := map[matrix]string{}
 	for i, m := range matrices {
 		matrixIDs[m.Name] = matrix(i)
 		matrixNames[matrix(i)] = m.Name
 	}
 
-	subjectIDs := map[S]subject{}
-	subjectNames := map[subject]S{}
+	subjectIDs := map[string]subject{}
+	subjectNames := map[subject]string{}
 	for i, s := range subjects {
 		subjectIDs[s] = subject(i)
 		subjectNames[subject(i)] = s
@@ -140,7 +140,7 @@ func NewProblem[S comparable, M comparable](
 		}
 	}
 
-	return Problem[S, M]{
+	return Problem{
 		subjectIDs:   subjectIDs,
 		subjectNames: subjectNames,
 		matrixIDs:    matrixIDs,
@@ -162,8 +162,8 @@ type Evaluator[F any] interface {
 }
 
 // Solver for optimization.
-type Solver[S comparable, M comparable, F any] struct {
-	problem       *Problem[S, M]
+type Solver[F any] struct {
+	problem       *Problem
 	bestSolution  Actions
 	bestFitness   F
 	preserved     []action
@@ -174,15 +174,15 @@ type Solver[S comparable, M comparable, F any] struct {
 }
 
 // NewSolver creates a new solver for a given fitness function.
-func NewSolver[S comparable, M comparable, F any](evaluator Evaluator[F], comparator Comparator[F]) Solver[S, M, F] {
-	return Solver[S, M, F]{
+func NewSolver[S comparable, M comparable, F any](evaluator Evaluator[F], comparator Comparator[F]) Solver[F] {
+	return Solver[F]{
 		evaluator:  evaluator,
 		comparator: comparator,
 	}
 }
 
 // Solve the given problem.
-func (s *Solver[S, M, F]) Solve(problem *Problem[S, M]) (Solution[S, M, F], bool) {
+func (s *Solver[F]) Solve(problem *Problem) (Solution[F], bool) {
 	s.problem = problem
 	s.bestSolution = Actions{}
 	s.preserved = []action{}
@@ -192,15 +192,15 @@ func (s *Solver[S, M, F]) Solve(problem *Problem[S, M]) (Solution[S, M, F], bool
 	s.solve(&Actions{})
 
 	if s.anySolution {
-		actions := make([]Action[S, M], len(s.preserved))
+		actions := make([]Action, len(s.preserved))
 
 		for i := range s.preserved {
 			a := &s.preserved[i]
-			var reuse S
+			var reuse string
 			if a.IsReuse {
 				reuse = s.problem.subjectNames[a.Reuse]
 			}
-			actions[i] = Action[S, M]{
+			actions[i] = Action{
 				Subject:       s.problem.subjectNames[a.Subject],
 				Matrix:        s.problem.matrixNames[a.Matrix],
 				Samples:       a.Samples,
@@ -210,15 +210,15 @@ func (s *Solver[S, M, F]) Solve(problem *Problem[S, M]) (Solution[S, M, F], bool
 			}
 		}
 
-		return Solution[S, M, F]{
+		return Solution[F]{
 			Actions: actions,
 			Fitness: s.bestFitness,
 		}, true
 	}
-	return Solution[S, M, F]{}, false
+	return Solution[F]{}, false
 }
 
-func (s *Solver[S, M, F]) solve(sol *Actions) {
+func (s *Solver[F]) solve(sol *Actions) {
 	fitness := s.evaluator.Evaluate(sol)
 	if !s.comparator.Less(fitness, s.bestFitness) {
 		return
