@@ -169,7 +169,7 @@ type Evaluator[F any] interface {
 }
 
 // Solver for optimization.
-type Solver[F any] struct {
+type Solver[F comparable] struct {
 	problem      *Problem
 	bestFitness  F
 	solutions    []solution[F]
@@ -179,7 +179,7 @@ type Solver[F any] struct {
 }
 
 // NewSolver creates a new solver for a given fitness function.
-func NewSolver[F any](evaluator Evaluator[F], comparator Comparator[F]) Solver[F] {
+func NewSolver[F comparable](evaluator Evaluator[F], comparator Comparator[F]) Solver[F] {
 	return Solver[F]{
 		evaluator:  evaluator,
 		comparator: comparator,
@@ -230,14 +230,7 @@ func (s *Solver[F]) solve(sol *Actions) {
 	fitness := s.evaluator.Evaluate(sol)
 
 	if s.comparator.IsPareto() {
-		betterThanAny := len(s.solutions) == 0
-		for i := range s.solutions {
-			if s.comparator.Compare(fitness, s.solutions[i].Fitness) <= 0 {
-				betterThanAny = true
-				break
-			}
-		}
-		if !betterThanAny {
+		if !s.isParetoOptimal(fitness, false) {
 			return
 		}
 	} else {
@@ -335,19 +328,7 @@ func (s *Solver[F]) solve(sol *Actions) {
 		}
 	} else {
 		if s.comparator.IsPareto() {
-			betterThanAny := len(s.solutions) == 0
-			for i := len(s.solutions) - 1; i >= 0; i-- {
-				comp := s.comparator.Compare(fitness, s.solutions[i].Fitness)
-				if comp < 0 {
-					ln := len(s.solutions) - 1
-					s.solutions[i], s.solutions[ln] = s.solutions[ln], s.solutions[i]
-					s.solutions = s.solutions[:ln]
-				}
-				if comp <= 0 {
-					betterThanAny = true
-				}
-			}
-			if betterThanAny {
+			if s.isParetoOptimal(fitness, true) {
 				s.solutions = append(s.solutions, solution[F]{
 					Actions: slices.Clone(s.tempSolution),
 					Fitness: fitness,
@@ -369,4 +350,33 @@ func (s *Solver[F]) solve(sol *Actions) {
 			}
 		}
 	}
+}
+
+func (s *Solver[F]) removeSolution(idx int) {
+	ln := len(s.solutions) - 1
+	s.solutions[idx], s.solutions[ln] = s.solutions[ln], s.solutions[idx]
+	s.solutions = s.solutions[:ln]
+}
+
+func (s *Solver[F]) isParetoOptimal(f F, remove bool) bool {
+	betterThanAny := len(s.solutions) == 0
+	hasDuplicate := false
+	for i := len(s.solutions) - 1; i >= 0; i-- {
+		comp := s.comparator.Compare(f, s.solutions[i].Fitness)
+
+		if comp < 0 {
+			if remove {
+				s.removeSolution(i)
+			}
+		} else if f == s.solutions[i].Fitness {
+			hasDuplicate = true
+		}
+
+		if comp <= 0 {
+			betterThanAny = true
+		} else {
+			hasDuplicate = true
+		}
+	}
+	return betterThanAny && !hasDuplicate
 }
