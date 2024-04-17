@@ -3,47 +3,70 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 
 	"github.com/mlange-42/isso"
 	"github.com/mlange-42/isso/fitness"
+	"github.com/spf13/cobra"
 )
 
 func main() {
-	if len(os.Args) != 2 {
-		fmt.Println("Usage:\n$ isso problem.json")
-		os.Exit(0)
+	if err := RootCommand().Execute(); err != nil {
+		fmt.Fprintf(os.Stderr, "%s\n", err.Error())
+		os.Exit(1)
+	}
+}
+
+// RootCommand sets up the CLI
+func RootCommand() *cobra.Command {
+	var format string
+	var file string
+
+	root := &cobra.Command{
+		Use:           "isso",
+		Short:         "isso -- Iterative Sampling Schedule Optimization",
+		Long:          `isso -- Iterative Sampling Schedule Optimization`,
+		SilenceUsage:  true,
+		SilenceErrors: true,
+		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			return nil
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			jsData, err := os.ReadFile(file)
+			if err != nil {
+				return err
+			}
+			problem := isso.ProblemDef{}
+			err = json.Unmarshal(jsData, &problem)
+			if err != nil {
+				return err
+			}
+
+			p := isso.NewProblem(problem)
+
+			s := isso.NewSolver(
+				&fitness.TripsAndSamplesEvaluator{},
+				&fitness.TripsThenSamples{},
+			)
+
+			if solution, ok := s.Solve(&p); ok {
+				fmt.Fprintf(os.Stderr, "Found %d solution(s)\n\n", len(solution))
+
+				jsData, err := json.MarshalIndent(&solution, "", "    ")
+				if err != nil {
+					return err
+				}
+				fmt.Println(string(jsData))
+				return nil
+			}
+			fmt.Println("No solution found")
+
+			return nil
+		},
 	}
 
-	file := os.Args[1]
+	root.Flags().StringVarP(&file, "input", "i", "", "Input JSON file")
+	root.Flags().StringVarP(&format, "format", "f", "table", "Output format. One of [table json]")
 
-	jsData, err := os.ReadFile(file)
-	if err != nil {
-		log.Fatal(err)
-	}
-	problem := isso.ProblemDef{}
-	err = json.Unmarshal(jsData, &problem)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	p := isso.NewProblem(problem)
-
-	s := isso.NewSolver(
-		&fitness.TripsAndSamplesEvaluator{},
-		&fitness.TripsThenSamples{},
-	)
-
-	if solution, ok := s.Solve(&p); ok {
-		fmt.Fprintf(os.Stderr, "Found %d solution(s)\n\n", len(solution))
-
-		jsData, err := json.MarshalIndent(&solution, "", "    ")
-		if err != nil {
-			log.Fatal(err)
-		}
-		fmt.Println(string(jsData))
-		return
-	}
-	fmt.Println("No solution found")
+	return root
 }
