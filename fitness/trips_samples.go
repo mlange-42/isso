@@ -1,6 +1,8 @@
 package fitness
 
 import (
+	"cmp"
+
 	"github.com/mlange-42/isso"
 )
 
@@ -40,9 +42,15 @@ func (e *TripsAndSamplesEvaluator) Evaluate(sol *isso.Actions) TripsAndSamplesFi
 
 type TripsAndSamplesComparator struct{}
 
-func (e *TripsAndSamplesComparator) Less(a, b TripsAndSamplesFitness) bool {
+func (e *TripsAndSamplesComparator) Compare(a, b TripsAndSamplesFitness) int {
 	if b.Trips == 0 && b.Samples == 0 {
-		return true
+		return -1
 	}
-	return a.Trips < b.Trips || (a.Trips == b.Trips && a.Samples < b.Samples)
+	if a.Trips < b.Trips {
+		return -1
+	}
+	if a.Trips == b.Trips {
+		return cmp.Compare(a.Samples, b.Samples)
+	}
+	return 1
 }
