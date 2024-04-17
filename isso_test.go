@@ -116,20 +116,20 @@ func TestParetoProblem(t *testing.T) {
 	}
 
 	capacity := []int{
-		500, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 500,
+		1000, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 1000,
 	}
 
 	requirements := []isso.Requirement{
 		{
 			Subject: "Pest 1",
 			Matrix:  "fruits",
-			Samples: 500,
+			Samples: 1000,
 			Times:   []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
 		},
 		{
 			Subject: "Pest 2",
 			Matrix:  "fruits",
-			Samples: 500,
+			Samples: 1000,
 			Times:   []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11},
 		},
 	}
