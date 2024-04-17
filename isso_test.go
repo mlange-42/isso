@@ -8,7 +8,7 @@ import (
 	"github.com/mlange-42/isso/fitness"
 )
 
-func TestProblem(t *testing.T) {
+func TestDefaultProblem(t *testing.T) {
 	subjects := []string{
 		"Pest 1",
 		"Pest 2",
@@ -85,7 +85,8 @@ func TestProblem(t *testing.T) {
 
 	s := isso.NewSolver(
 		&fitness.TripsAndSamplesEvaluator{},
-		&fitness.TripsAndSamplesComparator{},
+		//&fitness.TripsThenSamples{},
+		&fitness.TripsSamplesPareto{},
 	)
 
 	if solution, ok := s.Solve(&p); ok {

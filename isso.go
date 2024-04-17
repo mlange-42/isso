@@ -160,6 +160,7 @@ func NewProblem(
 // Comparator interface or comparing fitness values.
 type Comparator[F any] interface {
 	Compare(a, b F) int
+	IsPareto() bool
 }
 
 // Evaluator interface or deriving fitness from a solution.
@@ -227,8 +228,22 @@ func (s *Solver[F]) Solve(problem *Problem) ([]Solution[F], bool) {
 
 func (s *Solver[F]) solve(sol *Actions) {
 	fitness := s.evaluator.Evaluate(sol)
-	if s.comparator.Compare(fitness, s.bestFitness) > 0 {
-		return
+
+	if s.comparator.IsPareto() {
+		betterThanAny := len(s.solutions) == 0
+		for i := range s.solutions {
+			if s.comparator.Compare(fitness, s.solutions[i].Fitness) <= 0 {
+				betterThanAny = true
+				break
+			}
+		}
+		if !betterThanAny {
+			return
+		}
+	} else {
+		if s.comparator.Compare(fitness, s.bestFitness) > 0 {
+			return
+		}
 	}
 
 	var unsatisfied *requirement = nil
@@ -319,17 +334,39 @@ func (s *Solver[F]) solve(sol *Actions) {
 			sol.Actions = sol.Actions[:len(sol.Actions)-1]
 		}
 	} else {
-		comp := s.comparator.Compare(fitness, s.bestFitness)
-		if comp < 0 {
-			s.solutions = s.solutions[:0]
-		}
-		if comp <= 0 {
-			s.bestFitness = fitness
-			s.solutions = append(s.solutions, solution[F]{
-				Actions: slices.Clone(s.tempSolution),
-				Fitness: fitness,
-			})
-			s.tempSolution = s.tempSolution[:0]
+		if s.comparator.IsPareto() {
+			betterThanAny := len(s.solutions) == 0
+			for i := len(s.solutions) - 1; i >= 0; i-- {
+				comp := s.comparator.Compare(fitness, s.solutions[i].Fitness)
+				if comp < 0 {
+					ln := len(s.solutions) - 1
+					s.solutions[i], s.solutions[ln] = s.solutions[ln], s.solutions[i]
+					s.solutions = s.solutions[:ln]
+				}
+				if comp <= 0 {
+					betterThanAny = true
+				}
+			}
+			if betterThanAny {
+				s.solutions = append(s.solutions, solution[F]{
+					Actions: slices.Clone(s.tempSolution),
+					Fitness: fitness,
+				})
+				s.tempSolution = s.tempSolution[:0]
+			}
+		} else {
+			comp := s.comparator.Compare(fitness, s.bestFitness)
+			if comp < 0 {
+				s.solutions = s.solutions[:0]
+			}
+			if comp <= 0 {
+				s.bestFitness = fitness
+				s.solutions = append(s.solutions, solution[F]{
+					Actions: slices.Clone(s.tempSolution),
+					Fitness: fitness,
+				})
+				s.tempSolution = s.tempSolution[:0]
+			}
 		}
 	}
 }
