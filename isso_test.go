@@ -7,16 +7,28 @@ import (
 )
 
 func TestProblem(t *testing.T) {
-	p := isso.NewProblem(
-		[]string{
-			"fruits & shoots",
-			"fruits | shoots",
+	matrices := []isso.MatrixDef{
+		{Name: "fruits & shoots", CanReuse: []string{}},
+		{Name: "fruits | shoots", CanReuse: []string{
 			"fruits",
 			"shoots",
-		},
-		[]int{
-			150, 250, 400, 700, 600, 200, 50, 0, 150, 200, 150, 50,
-		},
+			"fruits & shoots",
+		}},
+		{Name: "fruits", CanReuse: []string{
+			"fruits & shoots",
+		}},
+		{Name: "shoots", CanReuse: []string{
+			"fruits & shoots",
+		}},
+	}
+
+	capacity := []int{
+		150, 250, 400, 700, 600, 200, 50, 0, 150, 200, 150, 50,
+	}
+
+	p := isso.NewProblem(
+		matrices,
+		capacity,
 	)
 
 	_ = p
