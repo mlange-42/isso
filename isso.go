@@ -2,6 +2,7 @@ package isso
 
 import (
 	"log"
+	"slices"
 )
 
 type Subject int
@@ -95,11 +96,19 @@ func NewProblem[S comparable, M comparable](
 		if !ok {
 			log.Fatalf("unknown matrix '%v'", r.Matrix)
 		}
+
+		times := slices.Clone(r.Times)
+		slices.Sort(times)
+		times = slices.Compact(times)
+		if len(times) != len(r.Times) {
+			log.Fatalf("duplicate time entry in times for subject '%v'", r.Subject)
+		}
+
 		req[i] = Requirement{
 			Subject: subject,
 			Matrix:  matrix,
 			Samples: r.Samples,
-			Times:   r.Times,
+			Times:   times,
 		}
 	}
 
