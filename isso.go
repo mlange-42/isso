@@ -7,6 +7,13 @@ import (
 type Subject int
 type Matrix int
 
+type RequirementDef[S comparable, M comparable] struct {
+	Subject S
+	Matrix  M
+	Samples int
+	Times   []int
+}
+
 type Requirement struct {
 	Subject Subject
 	Matrix  Matrix
@@ -28,19 +35,34 @@ type MatrixDef[M comparable] struct {
 	CanReuse []M
 }
 
-type Problem[M comparable] struct {
-	matrixIDs   map[M]Matrix
-	matrixNames map[Matrix]M
-	capacity    []int
-	reusable    [][]bool
+type Problem[S comparable, M comparable] struct {
+	subjectIDs   map[S]Subject
+	subjectNames map[Subject]S
+	matrixIDs    map[M]Matrix
+	matrixNames  map[Matrix]M
+	capacity     []int
+	reusable     [][]bool
+	requirements []Requirement
 }
 
-func NewProblem[M comparable](matrices []MatrixDef[M], capacity []int) Problem[M] {
-	ids := map[M]Matrix{}
-	names := map[Matrix]M{}
+func NewProblem[S comparable, M comparable](
+	subjects []S,
+	matrices []MatrixDef[M],
+	capacity []int,
+	requirements []RequirementDef[S, M]) Problem[S, M] {
+
+	matrixIDs := map[M]Matrix{}
+	matrixNames := map[Matrix]M{}
 	for i, m := range matrices {
-		ids[m.Name] = Matrix(i)
-		names[Matrix(i)] = m.Name
+		matrixIDs[m.Name] = Matrix(i)
+		matrixNames[Matrix(i)] = m.Name
+	}
+
+	subjectIDs := map[S]Subject{}
+	subjectNames := map[Subject]S{}
+	for i, s := range subjects {
+		subjectIDs[s] = Subject(i)
+		subjectNames[Subject(i)] = s
 	}
 
 	reusable := make([][]bool, len(matrices))
@@ -48,7 +70,7 @@ func NewProblem[M comparable](matrices []MatrixDef[M], capacity []int) Problem[M
 		reusable[i] = make([]bool, len(matrices))
 		reusable[i][i] = true
 		for _, ru := range m.CanReuse {
-			if id, ok := ids[ru]; ok {
+			if id, ok := matrixIDs[ru]; ok {
 				reusable[i][id] = true
 			} else {
 				log.Fatalf("unknown matrix '%v'", ru)
@@ -56,10 +78,31 @@ func NewProblem[M comparable](matrices []MatrixDef[M], capacity []int) Problem[M
 		}
 	}
 
-	return Problem[M]{
-		matrixIDs:   ids,
-		matrixNames: names,
-		capacity:    capacity,
-		reusable:    reusable,
+	req := make([]Requirement, len(requirements))
+	for i, r := range requirements {
+		subject, ok := subjectIDs[r.Subject]
+		if !ok {
+			log.Fatalf("unknown subject '%v'", r.Subject)
+		}
+		matrix, ok := matrixIDs[r.Matrix]
+		if !ok {
+			log.Fatalf("unknown matrix '%v'", r.Matrix)
+		}
+		req[i] = Requirement{
+			Subject: subject,
+			Matrix:  matrix,
+			Samples: r.Samples,
+			Times:   r.Times,
+		}
+	}
+
+	return Problem[S, M]{
+		subjectIDs:   subjectIDs,
+		subjectNames: subjectNames,
+		matrixIDs:    matrixIDs,
+		matrixNames:  matrixNames,
+		capacity:     capacity,
+		reusable:     reusable,
+		requirements: req,
 	}
 }
