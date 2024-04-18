@@ -1,5 +1,11 @@
 # Changelog
 
+## [[unpublished]](https://github.com/mlange-42/isso/compare/v0.2.0...main)
+
+### Features
+
+* Adds CSV as output format for solutions (#13)
+
 ## [[v0.2.0]](https://github.com/mlange-42/isso/compare/v0.1.0...v0.2.0)
 
 ### Breaking changes

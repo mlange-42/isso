@@ -31,6 +31,25 @@ func SolutionTable[F any](solution Solution[F]) string {
 	return b.String()
 }
 
+func SolutionCSV[F any](solution Solution[F], index int, sep string) string {
+	b := strings.Builder{}
+
+	if index <= 0 {
+		if index >= 0 {
+			b.WriteString(fmt.Sprintf("%s%s", "Solution", sep))
+		}
+		b.WriteString(fmt.Sprintf("%s%s%s%s%s%s%s%s%s%s%s\n", "Subject", sep, "Matrix", sep, "Time", sep, "Samples", sep, "Reuse", sep, "Target"))
+	}
+
+	for _, a := range solution.Actions {
+		if index >= 0 {
+			b.WriteString(fmt.Sprintf("%d%s", index, sep))
+		}
+		b.WriteString(fmt.Sprintf("%s%s%s%s%d%s%d%s%s%s%d\n", a.Subject, sep, a.Matrix, sep, a.Time, sep, a.Samples, sep, a.Reuse, sep, a.TargetSamples))
+	}
+	return b.String()
+}
+
 type timeEntry struct {
 	Samples  int
 	Subjects map[string]int
