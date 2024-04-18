@@ -53,7 +53,7 @@ type Matrix struct {
 }
 
 // Actions of an internal solution.
-type Actions struct {
+type actions struct {
 	Actions []ActionDef
 }
 
@@ -160,7 +160,7 @@ type Comparator[F any] interface {
 
 // Evaluator interface or deriving fitness from a solution.
 type Evaluator[F any] interface {
-	Evaluate(s *Actions) F
+	Evaluate(s []ActionDef) F
 }
 
 // Solver for optimization.
@@ -187,7 +187,7 @@ func (s *Solver[F]) Solve(problem *Problem) ([]Solution[F], bool) {
 	s.solutions = []solution[F]{}
 	s.tempSolution = []ActionDef{}
 
-	s.solve(&Actions{})
+	s.solve(&actions{})
 
 	if len(s.solutions) > 0 {
 		return s.toSolutions(), true
@@ -229,8 +229,8 @@ func (s *Solver[F]) toSolutions() []Solution[F] {
 }
 
 // Recursive solver function.
-func (s *Solver[F]) solve(sol *Actions) {
-	fitness := s.evaluator.Evaluate(sol)
+func (s *Solver[F]) solve(sol *actions) {
+	fitness := s.evaluator.Evaluate(sol.Actions)
 
 	if s.comparator.IsPareto() {
 		if !s.isParetoOptimal(fitness, false) {
