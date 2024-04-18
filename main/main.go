@@ -38,7 +38,14 @@ func RootCommand() *cobra.Command {
 				return nil
 			}
 
-			return run(file, format, pareto)
+			output, err := run(file, format, pareto)
+			if err != nil {
+				return err
+			}
+
+			fmt.Println(output)
+
+			return nil
 		},
 	}
 
@@ -49,15 +56,15 @@ func RootCommand() *cobra.Command {
 	return root
 }
 
-func run(file, format string, pareto bool) error {
+func run(file, format string, pareto bool) (string, error) {
 	jsData, err := os.ReadFile(file)
 	if err != nil {
-		return err
+		return "", err
 	}
 	problem := isso.ProblemDef{}
 	err = json.Unmarshal(jsData, &problem)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	p := isso.NewProblem(problem)
@@ -76,39 +83,40 @@ func run(file, format string, pareto bool) error {
 	solution, ok := s.Solve(&p)
 	if !ok {
 		fmt.Println("No solution found")
-		return nil
+		return "", nil
 	}
 
 	fmt.Fprintf(os.Stderr, "Found %d solution(s)\n\n", len(solution))
 
+	output := ""
 	switch format {
 	case "json":
 		jsData, err = json.MarshalIndent(&solution, "", "    ")
 		if err != nil {
-			return err
+			return "", err
 		}
 		fmt.Println(string(jsData))
 
 	case "table":
 		for _, sol := range solution {
-			fmt.Println(isso.SolutionTable(sol))
-			fmt.Printf("(%d trips, %d samples)\n", sol.Fitness.Trips, sol.Fitness.Samples)
-			fmt.Println("------------------------------------------------------------")
+			output += fmt.Sprintln(isso.SolutionTable(sol))
+			output += fmt.Sprintf("(%d trips, %d samples)\n", sol.Fitness.Trips, sol.Fitness.Samples)
+			output += fmt.Sprintln("------------------------------------------------------------")
 		}
 	case "list":
 		for _, sol := range solution {
-			fmt.Println(isso.SolutionList(sol))
-			fmt.Printf("(%d trips, %d samples)\n", sol.Fitness.Trips, sol.Fitness.Samples)
-			fmt.Println("------------------------------------------------------------")
+			output += fmt.Sprintln(isso.SolutionList(sol))
+			output += fmt.Sprintf("(%d trips, %d samples)\n", sol.Fitness.Trips, sol.Fitness.Samples)
+			output += fmt.Sprintln("------------------------------------------------------------")
 		}
 	case "fitness":
 		for _, sol := range solution {
-			fmt.Printf("(%d trips, %d samples)\n", sol.Fitness.Trips, sol.Fitness.Samples)
+			output += fmt.Sprintf("(%d trips, %d samples)\n", sol.Fitness.Trips, sol.Fitness.Samples)
 		}
 
 	default:
-		return fmt.Errorf("unknown format '%s'", format)
+		return "", fmt.Errorf("unknown format '%s'", format)
 	}
 
-	return nil
+	return output, nil
 }
