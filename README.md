@@ -16,13 +16,13 @@ Run the included examples like this...
 The default test problem:
 
 ```
-go run ./main -i data/problem.json
+go run ./cmd/isso -i data/problem.json
 ```
 
 A pareto optimization example:
 
 ```
-go run ./main -i data/pareto.json --pareto --format fitness
+go run ./cmd/isso -i data/pareto.json --pareto --format fitness
 ```
 
 See folder `data` for problem definition examples.
