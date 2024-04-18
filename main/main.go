@@ -38,67 +38,7 @@ func RootCommand() *cobra.Command {
 				return nil
 			}
 
-			jsData, err := os.ReadFile(file)
-			if err != nil {
-				return err
-			}
-			problem := isso.ProblemDef{}
-			err = json.Unmarshal(jsData, &problem)
-			if err != nil {
-				return err
-			}
-
-			p := isso.NewProblem(problem)
-
-			var comp isso.Comparator[fitness.TripsAndSamplesFitness]
-			if pareto {
-				comp = &fitness.TripsSamplesPareto{}
-			} else {
-				comp = &fitness.TripsThenSamples{}
-			}
-
-			s := isso.NewSolver(
-				&fitness.TripsAndSamplesEvaluator{},
-				comp,
-			)
-			solution, ok := s.Solve(&p)
-			if !ok {
-				fmt.Println("No solution found")
-				return nil
-			}
-
-			fmt.Fprintf(os.Stderr, "Found %d solution(s)\n\n", len(solution))
-
-			switch format {
-			case "json":
-				jsData, err = json.MarshalIndent(&solution, "", "    ")
-				if err != nil {
-					return err
-				}
-				fmt.Println(string(jsData))
-
-			case "table":
-				for _, sol := range solution {
-					fmt.Println(isso.SolutionTable(sol))
-					fmt.Printf("(%d trips, %d samples)\n", sol.Fitness.Trips, sol.Fitness.Samples)
-					fmt.Println("------------------------------------------------------------")
-				}
-			case "list":
-				for _, sol := range solution {
-					fmt.Println(isso.SolutionList(sol))
-					fmt.Printf("(%d trips, %d samples)\n", sol.Fitness.Trips, sol.Fitness.Samples)
-					fmt.Println("------------------------------------------------------------")
-				}
-			case "fitness":
-				for _, sol := range solution {
-					fmt.Printf("(%d trips, %d samples)\n", sol.Fitness.Trips, sol.Fitness.Samples)
-				}
-
-			default:
-				return fmt.Errorf("unknown format '%s'", format)
-			}
-
-			return nil
+			return run(file, format, pareto)
 		},
 	}
 
@@ -107,4 +47,68 @@ func RootCommand() *cobra.Command {
 	root.Flags().BoolVarP(&pareto, "pareto", "p", false, "Use pareto optimization criterion")
 
 	return root
+}
+
+func run(file, format string, pareto bool) error {
+	jsData, err := os.ReadFile(file)
+	if err != nil {
+		return err
+	}
+	problem := isso.ProblemDef{}
+	err = json.Unmarshal(jsData, &problem)
+	if err != nil {
+		return err
+	}
+
+	p := isso.NewProblem(problem)
+
+	var comp isso.Comparator[fitness.TripsAndSamplesFitness]
+	if pareto {
+		comp = &fitness.TripsSamplesPareto{}
+	} else {
+		comp = &fitness.TripsThenSamples{}
+	}
+
+	s := isso.NewSolver(
+		&fitness.TripsAndSamplesEvaluator{},
+		comp,
+	)
+	solution, ok := s.Solve(&p)
+	if !ok {
+		fmt.Println("No solution found")
+		return nil
+	}
+
+	fmt.Fprintf(os.Stderr, "Found %d solution(s)\n\n", len(solution))
+
+	switch format {
+	case "json":
+		jsData, err = json.MarshalIndent(&solution, "", "    ")
+		if err != nil {
+			return err
+		}
+		fmt.Println(string(jsData))
+
+	case "table":
+		for _, sol := range solution {
+			fmt.Println(isso.SolutionTable(sol))
+			fmt.Printf("(%d trips, %d samples)\n", sol.Fitness.Trips, sol.Fitness.Samples)
+			fmt.Println("------------------------------------------------------------")
+		}
+	case "list":
+		for _, sol := range solution {
+			fmt.Println(isso.SolutionList(sol))
+			fmt.Printf("(%d trips, %d samples)\n", sol.Fitness.Trips, sol.Fitness.Samples)
+			fmt.Println("------------------------------------------------------------")
+		}
+	case "fitness":
+		for _, sol := range solution {
+			fmt.Printf("(%d trips, %d samples)\n", sol.Fitness.Trips, sol.Fitness.Samples)
+		}
+
+	default:
+		return fmt.Errorf("unknown format '%s'", format)
+	}
+
+	return nil
 }
