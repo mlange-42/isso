@@ -15,12 +15,12 @@ type TripsAndSamplesEvaluator struct {
 	times []int
 }
 
-func (e *TripsAndSamplesEvaluator) Evaluate(sol *isso.Actions) TripsAndSamplesFitness {
+func (e *TripsAndSamplesEvaluator) Evaluate(sol []isso.ActionDef) TripsAndSamplesFitness {
 	for i := range e.times {
 		e.times[i] = 0
 	}
 	samples := 0
-	for _, a := range sol.Actions {
+	for _, a := range sol {
 		for len(e.times) <= a.Time {
 			e.times = append(e.times, 0)
 		}

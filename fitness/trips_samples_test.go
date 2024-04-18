@@ -11,7 +11,7 @@ import (
 type f = fitness.TripsAndSamplesFitness
 
 func TestTripsAndSamplesEvaluator(t *testing.T) {
-	solution := isso.Actions{Actions: []isso.ActionDef{
+	solution := []isso.ActionDef{
 		{
 			Subject: 1,
 			Samples: 100,
@@ -29,10 +29,10 @@ func TestTripsAndSamplesEvaluator(t *testing.T) {
 			Reuse:   2,
 			IsReuse: true,
 		},
-	}}
+	}
 
 	eval := fitness.TripsAndSamplesEvaluator{}
-	fit := eval.Evaluate(&solution)
+	fit := eval.Evaluate(solution)
 
 	assert.Equal(t, f{Trips: 2, Samples: 150}, fit)
 }
