@@ -95,7 +95,7 @@ func run(file, format string, pareto bool) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		fmt.Println(string(jsData))
+		output = fmt.Sprintln(string(jsData))
 
 	case "table":
 		for _, sol := range solution {

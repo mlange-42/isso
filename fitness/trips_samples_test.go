@@ -43,10 +43,13 @@ func TestTripsThenSamples(t *testing.T) {
 	assert.False(t, comp.IsPareto())
 
 	assert.Equal(t, -1, comp.Compare(
+		f{Trips: 1, Samples: 100},
+		f{Trips: 0, Samples: 0},
+	))
+	assert.Equal(t, -1, comp.Compare(
 		f{Trips: 1, Samples: 1000},
 		f{Trips: 2, Samples: 100},
 	))
-
 	assert.Equal(t, -1, comp.Compare(
 		f{Trips: 1, Samples: 100},
 		f{Trips: 2, Samples: 100},
@@ -61,7 +64,6 @@ func TestTripsThenSamples(t *testing.T) {
 		f{Trips: 2, Samples: 100},
 		f{Trips: 1, Samples: 1000},
 	))
-
 	assert.Equal(t, 1, comp.Compare(
 		f{Trips: 1, Samples: 101},
 		f{Trips: 1, Samples: 100},
@@ -75,12 +77,20 @@ func TestTripsSamplesPareto(t *testing.T) {
 
 	assert.Equal(t, -1, comp.Compare(
 		f{Trips: 1, Samples: 100},
+		f{Trips: 0, Samples: 0},
+	))
+	assert.Equal(t, -1, comp.Compare(
+		f{Trips: 1, Samples: 100},
 		f{Trips: 2, Samples: 100},
 	))
 	assert.Equal(t, -1, comp.Compare(
 		f{Trips: 1, Samples: 100},
 		f{Trips: 1, Samples: 200},
 	))
+	assert.Equal(t, -1, comp.Compare(
+		f{Trips: 1, Samples: 100},
+		f{Trips: 2, Samples: 200},
+	))
 
 	assert.Equal(t, 0, comp.Compare(
 		f{Trips: 1, Samples: 100},
@@ -101,6 +111,10 @@ func TestTripsSamplesPareto(t *testing.T) {
 	))
 	assert.Equal(t, 1, comp.Compare(
 		f{Trips: 1, Samples: 200},
+		f{Trips: 1, Samples: 100},
+	))
+	assert.Equal(t, 1, comp.Compare(
+		f{Trips: 2, Samples: 200},
 		f{Trips: 1, Samples: 100},
 	))
 }
