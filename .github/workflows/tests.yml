@@ -94,5 +94,5 @@ jobs:
       - name: Get latest tag
         uses: actions-ecosystem/action-get-latest-tag@v1
         id: latest-tag
-#      - name: Run gorelease
-#        run: gorelease -base=${{ steps.latest-tag.outputs.tag }}
+      - name: Run gorelease
+        run: gorelease -base=${{ steps.latest-tag.outputs.tag }}
