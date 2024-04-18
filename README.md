@@ -7,7 +7,7 @@
 [![GitHub](https://img.shields.io/badge/github-repo-blue?logo=github)](https://github.com/mlange-42/isso)
 [![MIT license](https://img.shields.io/badge/MIT-brightgreen?label=license)](https://github.com/mlange-42/isso/blob/main/LICENSE)
 
-isso is a Go library and CLI app for optimizing sampling schedules under constrained capacity any potential sample re-use.
+isso is a Go library and CLI app for optimizing sampling schedules under constrained capacity and with potential sample re-use.
 
 ## CLI usage
 
