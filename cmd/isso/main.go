@@ -21,6 +21,7 @@ func main() {
 func RootCommand() *cobra.Command {
 	var format string
 	var file string
+	var csvDelimiter string
 	var pareto bool
 
 	root := &cobra.Command{
@@ -38,25 +39,26 @@ func RootCommand() *cobra.Command {
 				return nil
 			}
 
-			output, err := run(file, format, pareto)
+			output, err := run(file, format, csvDelimiter, pareto)
 			if err != nil {
 				return err
 			}
 
-			fmt.Println(output)
+			fmt.Print(output)
 
 			return nil
 		},
 	}
 
 	root.Flags().StringVarP(&file, "input", "i", "", "Input JSON file")
-	root.Flags().StringVarP(&format, "format", "f", "table", "Output format. One of [json table list fitness]")
+	root.Flags().StringVarP(&format, "format", "f", "table", "Output format. One of [json table csv list fitness]")
+	root.Flags().StringVarP(&csvDelimiter, "delim", "d", ",", "Column delimiter for CSV output")
 	root.Flags().BoolVarP(&pareto, "pareto", "p", false, "Use pareto optimization criterion")
 
 	return root
 }
 
-func run(file, format string, pareto bool) (string, error) {
+func run(file, format string, csvDelimiter string, pareto bool) (string, error) {
 	jsData, err := os.ReadFile(file)
 	if err != nil {
 		return "", err
@@ -99,16 +101,23 @@ func run(file, format string, pareto bool) (string, error) {
 
 	case "table":
 		for _, sol := range solution {
-			output += fmt.Sprintln(isso.SolutionTable(sol))
+			output += fmt.Sprintln(sol.ToTable())
 			output += fmt.Sprintf("(%d trips, %d samples)\n", sol.Fitness.Trips, sol.Fitness.Samples)
 			output += fmt.Sprintln("------------------------------------------------------------")
 		}
+
+	case "csv":
+		for i, sol := range solution {
+			output += fmt.Sprint(sol.ToCSV(i, csvDelimiter))
+		}
+
 	case "list":
 		for _, sol := range solution {
-			output += fmt.Sprintln(isso.SolutionList(sol))
+			output += fmt.Sprintln(sol.ToList())
 			output += fmt.Sprintf("(%d trips, %d samples)\n", sol.Fitness.Trips, sol.Fitness.Samples)
 			output += fmt.Sprintln("------------------------------------------------------------")
 		}
+
 	case "fitness":
 		for _, sol := range solution {
 			output += fmt.Sprintf("(%d trips, %d samples)\n", sol.Fitness.Trips, sol.Fitness.Samples)

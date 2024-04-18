@@ -12,8 +12,8 @@ type matrix int
 type Requirement struct {
 	Subject string
 	Matrix  string
-	Samples int
 	Times   []int
+	Samples int
 }
 
 // Action definition.
@@ -28,10 +28,10 @@ type Action struct {
 
 // requirement for internal use, using no strings.
 type requirement struct {
+	Times   []int
 	Subject subject
 	Matrix  matrix
 	Samples int
-	Times   []int
 }
 
 // ActionDef for internal use, using no strings.
@@ -59,14 +59,14 @@ type Actions struct {
 
 // Solution, translated back to using strings for subject and matrix.
 type Solution[F any] struct {
-	Actions []Action
 	Fitness F
+	Actions []Action
 }
 
 // solution for internal use.
 type solution[F any] struct {
-	Actions []ActionDef
 	Fitness F
+	Actions []ActionDef
 }
 
 type ProblemDef struct {
@@ -174,12 +174,12 @@ type Evaluator[F any] interface {
 
 // Solver for optimization.
 type Solver[F comparable] struct {
-	problem      *Problem
 	bestFitness  F
-	solutions    []solution[F]
-	tempSolution []ActionDef
 	evaluator    Evaluator[F]
 	comparator   Comparator[F]
+	problem      *Problem
+	solutions    []solution[F]
+	tempSolution []ActionDef
 }
 
 // NewSolver creates a new solver for a given fitness function.
