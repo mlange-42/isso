@@ -25,7 +25,7 @@ func (e *TripsAndSamplesEvaluator) Evaluate(sol []isso.ActionDef) TripsAndSample
 			e.times = append(e.times, 0)
 		}
 		e.times[a.Time] = 1
-		if !a.IsReuse {
+		if a.Reuse < 0 {
 			samples += a.Samples
 		}
 	}

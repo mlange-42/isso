@@ -40,7 +40,6 @@ type ActionDef struct {
 	Subject       subject
 	Matrix        matrix
 	Reuse         subject
-	IsReuse       bool
 	Time          int
 	Samples       int
 	TargetSamples int
@@ -206,7 +205,7 @@ func (s *Solver[F]) toSolutions() []Solution[F] {
 		for i := range sol.Actions {
 			a := &sol.Actions[i]
 			var reuse string
-			if a.IsReuse {
+			if a.Reuse >= 0 {
 				reuse = s.problem.subjectNames[a.Reuse]
 			}
 			actions[i] = Action{
@@ -269,14 +268,17 @@ func (s *Solver[F]) solve(sol *actions) {
 			samples -= equivalentSamples
 
 			if equivalentSamples > 0 {
+				reuse := subject(-1)
+				if !ownSample {
+					reuse = act.Subject
+				}
 				s.tempSolution = append(s.tempSolution, ActionDef{
 					Subject:       req.Subject,
 					Matrix:        req.Matrix,
 					Samples:       equivalentSamples,
 					Time:          act.Time,
 					TargetSamples: req.Samples,
-					IsReuse:       !ownSample,
-					Reuse:         act.Subject,
+					Reuse:         reuse,
 				})
 				if ownSample {
 					capacity[act.Time] -= equivalentSamples
@@ -319,7 +321,7 @@ func (s *Solver[F]) solve(sol *actions) {
 				Samples:       min(requiredSamples, capacity[t]),
 				TargetSamples: unsatisfied.Samples,
 				Time:          t,
-				IsReuse:       false,
+				Reuse:         -1,
 			})
 			s.tempSolution = s.tempSolution[:0]
 
