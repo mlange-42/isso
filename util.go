@@ -13,25 +13,27 @@ func min(a, b int) int {
 	return b
 }
 
-func SolutionTable[F any](solution Solution[F]) string {
+// ToTable formats the solution as a table for printing.
+func (s *Solution[F]) ToTable() string {
 	b := strings.Builder{}
 
 	b.WriteString(
 		fmt.Sprintf("%10s %18s %6s %10s %10s %10s\n", "Subject", "Matrix", "Time", "Samples", "Reuse", "Target"),
 	)
 
-	for i, a := range solution.Actions {
+	for i, a := range s.Actions {
 		b.WriteString(
 			fmt.Sprintf("%10s %18s %6d %10d %10s %10d", a.Subject, a.Matrix, a.Time, a.Samples, a.Reuse, a.TargetSamples),
 		)
-		if i < len(solution.Actions)-1 {
+		if i < len(s.Actions)-1 {
 			b.WriteString("\n")
 		}
 	}
 	return b.String()
 }
 
-func SolutionCSV[F any](solution Solution[F], index int, sep string) string {
+// ToCSV formats the solution as a CSV table.
+func (s *Solution[F]) ToCSV(index int, sep string) string {
 	b := strings.Builder{}
 
 	if index <= 0 {
@@ -41,7 +43,7 @@ func SolutionCSV[F any](solution Solution[F], index int, sep string) string {
 		b.WriteString(fmt.Sprintf("%s%s%s%s%s%s%s%s%s%s%s\n", "Subject", sep, "Matrix", sep, "Time", sep, "Samples", sep, "Reuse", sep, "Target"))
 	}
 
-	for _, a := range solution.Actions {
+	for _, a := range s.Actions {
 		if index >= 0 {
 			b.WriteString(fmt.Sprintf("%d%s", index, sep))
 		}
@@ -51,17 +53,18 @@ func SolutionCSV[F any](solution Solution[F], index int, sep string) string {
 }
 
 type timeEntry struct {
-	Samples  int
 	Subjects map[string]int
+	Samples  int
 }
 
-func SolutionList[F any](solution Solution[F]) string {
+// ToList formats the solution as list for printing.
+func (s *Solution[F]) ToList() string {
 	b := strings.Builder{}
 
 	times := []map[string]timeEntry{}
 
 	matrices := map[string]string{}
-	for _, a := range solution.Actions {
+	for _, a := range s.Actions {
 		for len(times) <= a.Time {
 			times = append(times, map[string]timeEntry{})
 		}
@@ -76,7 +79,7 @@ func SolutionList[F any](solution Solution[F]) string {
 		}
 	}
 
-	for _, a := range solution.Actions {
+	for _, a := range s.Actions {
 		if a.Reuse != "" {
 			t := times[a.Time]
 			matrix := matrices[a.Reuse]

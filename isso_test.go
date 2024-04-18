@@ -93,9 +93,9 @@ func TestDefaultProblem(t *testing.T) {
 	if solution, ok := s.Solve(&p); ok {
 		fmt.Printf("Found %d solution(s)\n\n", len(solution))
 		for _, sol := range solution {
-			fmt.Println(isso.SolutionTable(sol))
+			fmt.Println(sol.ToTable())
 			fmt.Println()
-			fmt.Println(isso.SolutionList(sol))
+			fmt.Println(sol.ToList())
 			fmt.Println()
 			fmt.Printf("(%d trips, %d samples)\n", sol.Fitness.Trips, sol.Fitness.Samples)
 			fmt.Println()

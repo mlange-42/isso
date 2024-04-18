@@ -6,6 +6,10 @@
 
 * Adds CSV as output format for solutions (#13)
 
+### Other
+
+* Changed formatting functions to methods of type Solution (#13)
+
 ## [[v0.2.0]](https://github.com/mlange-42/isso/compare/v0.1.0...v0.2.0)
 
 ### Breaking changes

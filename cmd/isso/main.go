@@ -101,19 +101,19 @@ func run(file, format string, csvDelimiter string, pareto bool) (string, error) 
 
 	case "table":
 		for _, sol := range solution {
-			output += fmt.Sprintln(isso.SolutionTable(sol))
+			output += fmt.Sprintln(sol.ToTable())
 			output += fmt.Sprintf("(%d trips, %d samples)\n", sol.Fitness.Trips, sol.Fitness.Samples)
 			output += fmt.Sprintln("------------------------------------------------------------")
 		}
 
 	case "csv":
 		for i, sol := range solution {
-			output += fmt.Sprint(isso.SolutionCSV(sol, i, csvDelimiter))
+			output += fmt.Sprint(sol.ToCSV(i, csvDelimiter))
 		}
 
 	case "list":
 		for _, sol := range solution {
-			output += fmt.Sprintln(isso.SolutionList(sol))
+			output += fmt.Sprintln(sol.ToList())
 			output += fmt.Sprintf("(%d trips, %d samples)\n", sol.Fitness.Trips, sol.Fitness.Samples)
 			output += fmt.Sprintln("------------------------------------------------------------")
 		}
