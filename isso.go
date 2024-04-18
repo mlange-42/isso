@@ -70,7 +70,6 @@ type solution[F any] struct {
 }
 
 type ProblemDef struct {
-	Subjects     []string
 	Matrices     []Matrix
 	Capacity     []int
 	Requirements []Requirement
@@ -97,13 +96,6 @@ func NewProblem(problem ProblemDef) Problem {
 		matrixNames[matrix(i)] = m.Name
 	}
 
-	subjectIDs := map[string]subject{}
-	subjectNames := map[subject]string{}
-	for i, s := range problem.Subjects {
-		subjectIDs[s] = subject(i)
-		subjectNames[subject(i)] = s
-	}
-
 	reusable := make([][]bool, len(problem.Matrices))
 	for i, m := range problem.Matrices {
 		reusable[i] = make([]bool, len(problem.Matrices))
@@ -118,17 +110,16 @@ func NewProblem(problem ProblemDef) Problem {
 	}
 
 	req := make([]requirement, len(problem.Requirements))
-	uniqueReq := map[subject]bool{}
+	subjectIDs := map[string]subject{}
+	subjectNames := map[subject]string{}
 	for i, r := range problem.Requirements {
-		subject, ok := subjectIDs[r.Subject]
-		if !ok {
-			log.Fatalf("unknown subject '%v'", r.Subject)
-		}
-
-		if _, ok := uniqueReq[subject]; ok {
+		if _, ok := subjectIDs[r.Subject]; ok {
 			log.Fatalf("duplicate subject '%v' in requirements", r.Subject)
 		}
-		uniqueReq[subject] = true
+		sub := subject(i)
+
+		subjectIDs[r.Subject] = sub
+		subjectNames[sub] = r.Subject
 
 		matrix, ok := matrixIDs[r.Matrix]
 		if !ok {
@@ -143,7 +134,7 @@ func NewProblem(problem ProblemDef) Problem {
 		}
 
 		req[i] = requirement{
-			Subject: subject,
+			Subject: sub,
 			Matrix:  matrix,
 			Samples: r.Samples,
 			Times:   times,

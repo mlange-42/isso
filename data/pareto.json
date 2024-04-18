@@ -1,8 +1,4 @@
 {
-    "Subjects": [
-        "Pest 1",
-		"Pest 2"
-    ],
 	"Matrices": [
         {
             "Name": "fruits",

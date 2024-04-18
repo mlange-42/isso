@@ -9,15 +9,6 @@ import (
 )
 
 func TestDefaultProblem(t *testing.T) {
-	subjects := []string{
-		"Pest 1",
-		"Pest 2",
-		"Pest 3",
-		"Pest 4",
-		"Pest 5",
-		"Pest 6",
-	}
-
 	matrices := []isso.Matrix{
 		{Name: "fruits & shoots", CanReuse: []string{}},
 		{Name: "fruits | shoots", CanReuse: []string{
@@ -78,7 +69,6 @@ func TestDefaultProblem(t *testing.T) {
 
 	p := isso.NewProblem(
 		isso.ProblemDef{
-			Subjects:     subjects,
 			Matrices:     matrices,
 			Capacity:     capacity,
 			Requirements: requirements,
@@ -108,11 +98,6 @@ func TestDefaultProblem(t *testing.T) {
 }
 
 func TestParetoProblem(t *testing.T) {
-	subjects := []string{
-		"Pest 1",
-		"Pest 2",
-	}
-
 	matrices := []isso.Matrix{
 		{Name: "fruits", CanReuse: []string{}},
 	}
@@ -138,7 +123,6 @@ func TestParetoProblem(t *testing.T) {
 
 	p := isso.NewProblem(
 		isso.ProblemDef{
-			Subjects:     subjects,
 			Matrices:     matrices,
 			Capacity:     capacity,
 			Requirements: requirements,
