@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/mlange-42/isso"
 	"github.com/mlange-42/isso/fitness"
@@ -90,42 +91,45 @@ func run(file, format string, csvDelimiter string, pareto bool) (string, error) 
 
 	fmt.Fprintf(os.Stderr, "Found %d solution(s)\n\n", len(solution))
 
-	output := ""
+	b := strings.Builder{}
 	switch format {
 	case "json":
-		jsData, err = json.MarshalIndent(&solution, "", "    ")
+		enc := json.NewEncoder(&b)
+		enc.SetEscapeHTML(false)
+		enc.SetIndent("", "    ")
+		err = enc.Encode(&solution)
 		if err != nil {
 			return "", err
 		}
-		output = fmt.Sprintln(string(jsData))
+		b.WriteString(fmt.Sprintln(string(jsData)))
 
 	case "table":
 		for _, sol := range solution {
-			output += fmt.Sprintln(sol.ToTable())
-			output += fmt.Sprintf("(%d trips, %d samples)\n", sol.Fitness.Trips, sol.Fitness.Samples)
-			output += fmt.Sprintln("------------------------------------------------------------")
+			b.WriteString(fmt.Sprintln(sol.ToTable()))
+			b.WriteString(fmt.Sprintf("(%d trips, %d samples)\n", sol.Fitness.Trips, sol.Fitness.Samples))
+			b.WriteString(fmt.Sprintln("------------------------------------------------------------"))
 		}
 
 	case "csv":
 		for i, sol := range solution {
-			output += fmt.Sprint(sol.ToCSV(i, csvDelimiter))
+			b.WriteString(fmt.Sprint(sol.ToCSV(i, csvDelimiter)))
 		}
 
 	case "list":
 		for _, sol := range solution {
-			output += fmt.Sprintln(sol.ToList())
-			output += fmt.Sprintf("(%d trips, %d samples)\n", sol.Fitness.Trips, sol.Fitness.Samples)
-			output += fmt.Sprintln("------------------------------------------------------------")
+			b.WriteString(fmt.Sprintln(sol.ToList()))
+			b.WriteString(fmt.Sprintf("(%d trips, %d samples)\n", sol.Fitness.Trips, sol.Fitness.Samples))
+			b.WriteString(fmt.Sprintln("------------------------------------------------------------"))
 		}
 
 	case "fitness":
 		for _, sol := range solution {
-			output += fmt.Sprintf("(%d trips, %d samples)\n", sol.Fitness.Trips, sol.Fitness.Samples)
+			b.WriteString(fmt.Sprintf("(%d trips, %d samples)\n", sol.Fitness.Trips, sol.Fitness.Samples))
 		}
 
 	default:
 		return "", fmt.Errorf("unknown format '%s'", format)
 	}
 
-	return output, nil
+	return b.String(), nil
 }
