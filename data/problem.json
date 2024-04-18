@@ -1,12 +1,4 @@
 {
-    "Subjects": [
-        "Pest 1",
-		"Pest 2",
-		"Pest 3",
-		"Pest 4",
-		"Pest 5",
-		"Pest 6"
-    ],
 	"Matrices": [
         {
             "Name": "fruits & shoots",

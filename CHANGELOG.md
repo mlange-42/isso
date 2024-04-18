@@ -5,6 +5,7 @@
 ### Features
 
 * Adds CSV as output format for solutions (#13)
+* Separate definition of subjects is no longer required, but derived from requirements (#17)
 
 ### Other
 
