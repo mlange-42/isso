@@ -16,18 +16,19 @@ func TestTripsAndSamplesEvaluator(t *testing.T) {
 			Subject: 1,
 			Samples: 100,
 			Time:    2,
+			Reuse:   -1,
 		},
 		{
 			Subject: 2,
 			Samples: 50,
 			Time:    4,
+			Reuse:   -1,
 		},
 		{
 			Subject: 3,
 			Samples: 50,
 			Time:    4,
 			Reuse:   2,
-			IsReuse: true,
 		},
 	}
 
