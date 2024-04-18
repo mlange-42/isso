@@ -34,8 +34,9 @@ type requirement struct {
 	Times   []int
 }
 
-// action for internal use, using no strings.
-type action struct {
+// ActionDef for internal use, using no strings.
+// It needs to be public as it is used in fitness evaluators.
+type ActionDef struct {
 	Subject       subject
 	Matrix        matrix
 	Reuse         subject
@@ -53,7 +54,7 @@ type Matrix struct {
 
 // Actions of an internal solution.
 type Actions struct {
-	Actions []action
+	Actions []ActionDef
 }
 
 // Solution, translated back to using strings for subject and matrix.
@@ -64,7 +65,7 @@ type Solution[F any] struct {
 
 // solution for internal use.
 type solution[F any] struct {
-	Actions []action
+	Actions []ActionDef
 	Fitness F
 }
 
@@ -176,7 +177,7 @@ type Solver[F comparable] struct {
 	problem      *Problem
 	bestFitness  F
 	solutions    []solution[F]
-	tempSolution []action
+	tempSolution []ActionDef
 	evaluator    Evaluator[F]
 	comparator   Comparator[F]
 }
@@ -193,7 +194,7 @@ func NewSolver[F comparable](evaluator Evaluator[F], comparator Comparator[F]) S
 func (s *Solver[F]) Solve(problem *Problem) ([]Solution[F], bool) {
 	s.problem = problem
 	s.solutions = []solution[F]{}
-	s.tempSolution = []action{}
+	s.tempSolution = []ActionDef{}
 
 	s.solve(&Actions{})
 
@@ -277,7 +278,7 @@ func (s *Solver[F]) solve(sol *Actions) {
 			samples -= equivalentSamples
 
 			if equivalentSamples > 0 {
-				s.tempSolution = append(s.tempSolution, action{
+				s.tempSolution = append(s.tempSolution, ActionDef{
 					Subject:       req.Subject,
 					Matrix:        req.Matrix,
 					Samples:       equivalentSamples,
@@ -321,7 +322,7 @@ func (s *Solver[F]) solve(sol *Actions) {
 				continue
 			}
 
-			sol.Actions = append(sol.Actions, action{
+			sol.Actions = append(sol.Actions, ActionDef{
 				Subject:       unsatisfied.Subject,
 				Matrix:        unsatisfied.Matrix,
 				Samples:       min(requiredSamples, capacity[t]),
