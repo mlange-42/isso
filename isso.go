@@ -295,6 +295,7 @@ func (s *Solver[F]) solve(sol *actions) {
 				requiredSamples = samples
 			} else {
 				// for the same matrix, prefer the larger sample.
+				// TODO: Why did we decide this? It can't solve certain problems properly this way!
 				if req.Matrix == unsatisfied.Matrix {
 					if samples > requiredSamples {
 						unsatisfied = req
