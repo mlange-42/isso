@@ -6,6 +6,7 @@ import (
 
 	"github.com/mlange-42/isso"
 	"github.com/mlange-42/isso/fitness"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestDefaultProblem(t *testing.T) {
@@ -83,6 +84,72 @@ func TestDefaultProblem(t *testing.T) {
 	if solution, ok := s.Solve(&p); ok {
 		fmt.Printf("Found %d solution(s)\n\n", len(solution))
 		for _, sol := range solution {
+			assert.Equal(t, 5, sol.Fitness.Trips)
+			assert.Equal(t, 1826, sol.Fitness.Samples)
+
+			fmt.Println(sol.ToTable())
+			fmt.Println()
+			fmt.Println(sol.ToList())
+			fmt.Println()
+			fmt.Printf("(%d trips, %d samples)\n", sol.Fitness.Trips, sol.Fitness.Samples)
+			fmt.Println()
+			fmt.Println("------------------------------------------------------------")
+			fmt.Println()
+		}
+		return
+	}
+	fmt.Println("No solution found")
+}
+
+func TestSimpleProblem(t *testing.T) {
+	matrices := []isso.Matrix{
+		{Name: "fruits", CanReuse: []string{}},
+	}
+
+	capacity := []int{
+		300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300,
+	}
+
+	requirements := []isso.Requirement{
+		{
+			Subject: "Pest 1",
+			Matrix:  "fruits",
+			Samples: 150,
+			Times:   []int{0},
+		},
+		{
+			Subject: "Pest 2",
+			Matrix:  "fruits",
+			Samples: 150,
+			Times:   []int{1},
+		},
+		{
+			Subject: "Pest 3",
+			Matrix:  "fruits",
+			Samples: 300,
+			Times:   []int{0, 1},
+		},
+	}
+
+	p := isso.NewProblem(
+		isso.ProblemDef{
+			Matrices:     matrices,
+			Capacity:     capacity,
+			Requirements: requirements,
+		},
+	)
+
+	s := isso.NewSolver(
+		&fitness.TripsAndSamplesEvaluator{},
+		&fitness.TripsThenSamples{},
+	)
+
+	if solution, ok := s.Solve(&p); ok {
+		fmt.Printf("Found %d solution(s)\n\n", len(solution))
+		for _, sol := range solution {
+			assert.Equal(t, 2, sol.Fitness.Trips)
+			assert.Equal(t, 300, sol.Fitness.Samples)
+
 			fmt.Println(sol.ToTable())
 			fmt.Println()
 			fmt.Println(sol.ToList())
